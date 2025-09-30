@@ -49,4 +49,4 @@ This project is written in C++ and uses ImGui and DirectX11. It is intended for 
 - This build is meant to be injected into the RON game while running in DX11 mode and at or past the main menu.
 - Use the provided injector or your preferred injector to load the DLL.
 - Press `Insert` to open the cheat menu and `End` to uninject.
-- This project uses both [ImGui]([url](https://github.com/ocornut/imgui)) and [Dumper-7]([url](https://github.com/Encryqed/Dumper-7))
+- This project uses both [ImGui](https://github.com/ocornut/imgui) and [Dumper-7](https://github.com/Encryqed/Dumper-7)
