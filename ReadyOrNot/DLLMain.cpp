@@ -9,7 +9,9 @@
 #include <d3d11.h>
 #include <dxgi.h>
 #include <chrono>
+#include <filesystem>
 #include <imgui_internal.h>
+#include <fstream>
 
 #include "Cheats.h"
 #include "Utils.h"
@@ -20,23 +22,21 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
-static bool InfAmmo = false;
-static bool GodMode = false;
 static bool ESPEnabled = false;
 static bool AimbotEnabled = false;
 static bool AimbotLOS = true;
 static float AimbotFOV = 15.0f;
 static bool ShowMenu = true;
-bool Cleaning = false;
-bool AllowGameInput = true;
-Variables* Vars = new Variables();
+static bool Cleaning = false;
+bool init = false;
 
-ULevel* LastLevel = nullptr;
+int Frames = 0;
 
-void SetVariablesRepeat(Variables& vars);
-void HookSwapChain();
-void Cleanup(std::thread& AutoVarsThread, Variables* Vars, HMODULE hModule);
-void InitImGui(HWND hwnd);
+static void HookSwapChain();
+static void Cleanup(HMODULE hModule);
+static void InitImGui(HWND hwnd);
+void SaveSettings();
+void LoadSettings();
 
 typedef HRESULT(__stdcall* tPresent)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 tPresent oPresent = nullptr;
@@ -45,7 +45,6 @@ ID3D11Device* pDevice = nullptr;
 ID3D11DeviceContext* pContext = nullptr;
 ID3D11RenderTargetView* pRenderTargetView = nullptr;
 DXGI_SWAP_CHAIN_DESC sd = {};
-static bool init = false;
 
 static void AddDefaultTooltip(const char* Text)
 {
@@ -58,310 +57,6 @@ static void AddDefaultTooltip(const char* Text)
 		ImGui::Text(Text);
 		ImGui::EndTooltip();
 	}
-}
-
-// Add WndProc hook for input handling
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-WNDPROC oWndProc = nullptr;
-
-LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-
-	if (ImGui::GetCurrentContext())
-		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-
-	if (AllowGameInput)
-		return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
-	if (!AllowGameInput)
-		return 0; // block input by returning 0
-
-	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam); // default
-}
-
-HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags)
-{
-	if (Vars->Level && LastLevel != Vars->Level)
-	{
-		if (Vars->ReadyOrNotChar)
-		{
-			Vars->ReadyOrNotChar->bGodMode = GodMode;
-			Vars->ReadyOrNotChar->GetEquippedWeapon()->bInfiniteAmmo = InfAmmo;
-		}
-		LastLevel = Vars->Level;
-	}
-
-	if (!init)
-	{
-		if (SUCCEEDED(SwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice)))
-		{
-			HWND hwnd = FindWindow(L"UnrealWindow", nullptr);
-			pDevice->GetImmediateContext(&pContext);
-
-			pSwapChain = SwapChain;
-			SwapChain->GetDesc(&sd);
-
-			if (!hwnd) hwnd = GetForegroundWindow();
-
-			InitImGui(hwnd);
-
-			// Hook WndProc for input handling
-			if (hwnd) {
-				oWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
-			}
-
-			init = true;
-		}
-	}
-	
-	if (Cleaning)
-	{
-		HWND hwnd = FindWindow(L"UnrealWindow", nullptr);
-		// Restore original WndProc
-		if (hwnd && oWndProc) {
-			SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)oWndProc);
-			oWndProc = nullptr;
-		}
-
-		if (SwapChain) {
-			void** vTable = *reinterpret_cast<void***>(SwapChain);
-			if (vTable && vTable[8]) {
-				DWORD oldProtect;
-				if (VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect)) {
-					vTable[8] = (void*)oPresent;  // restore original
-					VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
-				}
-			}
-		}
-	}
-
-	if (!ImGui::GetCurrentContext())
-		return oPresent(SwapChain, SyncInterval, Flags);
-
-
-
-	// Start the Dear ImGui frame
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	if (ShowMenu) {
-		ShowCursor(true);
-		ImGui::GetIO().MouseDrawCursor = true;
-
-		ImGui::Begin("Free Ready or Not Cheat by PeachMarrow12", nullptr, ImGuiWindowFlags_NoCollapse);
-
-		ImGui::SeparatorText("Hello, Have Fun Cheating!");
-
-		if (ImGui::TreeNode("Configuration"))
-		{
-			ImGui::Checkbox("Allow Game Input", &AllowGameInput);
-			AddDefaultTooltip("When disabled, the game will not receive any input but you are able to use keyboard/gamepad nav to click it again (use arrow keys).");
-
-			if (ImGui::TreeNode("Aimbot Settings"))
-			{
-				ImGui::SliderFloat("Aimbot FOV", &AimbotSettings.MaxFOV, 0.01f, 180.0f);
-
-				ImGui::Checkbox("Should Aimbot require LOS", &AimbotSettings.LOS);
-				AddDefaultTooltip("Targets must be visible; line - of - sight required.");
-
-				ImGui::Checkbox("Target Civilians", &AimbotSettings.TargetCivilians);
-
-				ImGui::Checkbox("Target Dead", &AimbotSettings.TargetDead);
-
-				ImGui::Checkbox("Target Arrested", &AimbotSettings.TargetArrested);
-
-				ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 10000);
-
-				ImGui::TreePop();
-			}
-
-			if (ImGui::TreeNode("ESP Settings"))
-			{
-				ImGui::Checkbox("Show Team", &ESPSettings.ShowTeam);
-
-				ImGui::Checkbox("Show Box", &ESPSettings.ShowBox);
-
-				ImGui::ColorEdit4("Suspect Color", (float*)&ESPSettings.SuspectColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::ColorEdit4("Civilian Color", (float*)&ESPSettings.CivilianColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::ColorEdit4("Dead Color", (float*)&ESPSettings.DeadColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::ColorEdit4("Team Color", (float*)&ESPSettings.TeamColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::ColorEdit4("Arrested Color", (float*)&ESPSettings.ArrestColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::TreePop();
-			}
-
-			ImGui::TreePop();
-		}
-
-		if (ImGui::Checkbox("GodMode", &GodMode))
-		{
-			Cheats::ToggleGodMode();
-		}
-
-		if (ImGui::Checkbox("Aimbot", &AimbotEnabled))
-		{
-			Cheats::ToggleAimbot();
-		}
-
-		if (ImGui::Checkbox("ESP", &ESPEnabled))
-		{
-			Cheats::ToggleESP();
-		}
-
-		if (ImGui::Checkbox("Infinite Ammo", &InfAmmo))
-		{
-			Cheats::ToggleInfAmmo();
-		}
-
-		if (ImGui::Button("Upgrade Weapon"))
-		{
-			Cheats::UpgradeWeaponStats();
-		}
-		AddDefaultTooltip("Removes recoil & spread, adds auto-fire, and boosts fire rate.");
-
-		ImGui::End();
-	}
-	else
-	{
-		ShowCursor(false);
-		ImGui::GetIO().MouseDrawCursor = false;
-	}
-
-	if (ESPEnabled)
-		Cheats::RenderESP(Vars);
-
-	if (pRenderTargetView) {
-		pContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr);
-
-		// Set viewport - ADD THIS
-		D3D11_VIEWPORT vp = {};
-		vp.Width = (float)sd.BufferDesc.Width;
-		vp.Height = (float)sd.BufferDesc.Height;
-		vp.MinDepth = 0.0f;
-		vp.MaxDepth = 1.0f;
-		vp.TopLeftX = 0;
-		vp.TopLeftY = 0;
-		pContext->RSSetViewports(1, &vp);
-	}
-
-	ImGui::Render();
-	
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-	if (AimbotEnabled)
-		Cheats::Aimbot(Vars);
-
-	return oPresent ? oPresent(SwapChain, SyncInterval, Flags) : S_OK;
-}
-
-// Attach hook
-void HookPresent()
-{
-	if (!pSwapChain) {
-		std::cout << "[ERROR] SwapChain is null...\n";
-		Cleaning = true;
-		Sleep(30);
-		return;
-	}
-
-	void** vTable = *reinterpret_cast<void***>(pSwapChain);
-	oPresent = (tPresent)vTable[8];
-
-	DWORD oldProtect;
-	VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-	vTable[8] = (void*)&hkPresent;
-	VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
-}
-
-
-DWORD MainThread(HMODULE hModule)
-{
-	AllocConsole();
-	FILE* Dummy;
-	freopen_s(&Dummy, "CONOUT$", "w", stdout);
-	freopen_s(&Dummy, "CONIN$", "r", stdin);
-
-	std::cout << "Cheat Injecting...\n";
-
-	std::thread AutoVarsThread(SetVariablesRepeat, std::ref(*Vars));
-
-	int FailAmount = 0;
-
-	while (!Vars->World and FailAmount < 8) {
-		Vars->World = Utils::GetWorldSafe();
-		FailAmount++;
-		Sleep(100);
-	}
-
-	while (!Vars->PlayerController and FailAmount < 8) {
-		Vars->PlayerController = Utils::GetPlayerController();
-		FailAmount++;
-		Sleep(100);
-	}
-
-	if (FailAmount >= 8) {
-		std::cout << "[ERROR] Failed to get essential game pointers. Exiting...\n";
-		Cleaning = true;
-		Sleep(2000);
-		Cleanup(AutoVarsThread, Vars, hModule);
-		return 0;
-	}
-	Sleep(1000); // Wait a second to ensure everything is loaded
-
-	HookSwapChain(); // Create a dummy device and swapchain to get the vtable
-	HookPresent(); // Hook the Present function
-
-	AReadyOrNotPlayerController* PC = (AReadyOrNotPlayerController*)Vars->PlayerController;
-
-	std::cout << "Cheat Injected\n";
-
-	GodMode = Vars->ReadyOrNotChar ? Vars->ReadyOrNotChar->bGodMode : false;
-
-	while (!Cleaning)
-	{
-		if (GetAsyncKeyState(VK_END) & 1) // Exit with END key
-		{
-			std::cout << "Exiting...\n";
-			Cleaning = true;
-			break;
-		}
-
-		if (GetAsyncKeyState(VK_INSERT) & 1) // Toggle Cheat Menu with INSERT key
-		{
-			ShowMenu = !ShowMenu;
-			std::cout << "Menu: " << (ShowMenu ? "ON" : "OFF") << "\n";
-		}
-
-		Sleep(100);
-	}
-
-	Cleanup(AutoVarsThread, Vars, hModule);
-	return 0;
-}
-
-// DLL entry point
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
-	switch (reason) {
-	case DLL_PROCESS_ATTACH:
-		DisableThreadLibraryCalls(hModule);
-		CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, nullptr);
-		break;
-	case DLL_PROCESS_DETACH:
-		break;
-	}
-	
-	return TRUE;
-}
-
-void SetVariablesRepeat(Variables& vars) {
-	while (!Cleaning) {
-		Variables::AutoSetVariables(vars);
-		Sleep(100);
-	}
-	return;
 }
 
 void InitImGui(HWND hwnd)
@@ -397,12 +92,11 @@ void InitImGui(HWND hwnd)
 		return;
 	}
 
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Controller Controls
 	io.Fonts->AddFontDefault();
 	io.MouseDrawCursor = true;  // Let ImGui draw the cursor
-	io.WantCaptureMouse = true; // ImGui should capture mouse when over windows
 
 	ImGui::StyleColorsDark();
 
@@ -427,14 +121,280 @@ void InitImGui(HWND hwnd)
 	std::cout << "[InitImGui] ImGui initialized successfully\n";
 }
 
+// Add WndProc hook for input handling
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+WNDPROC oWndProc = nullptr;
+
+LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (ImGui::GetCurrentContext()) {
+		// Let ImGui handle input when menu is shown
+		if (ShowMenu && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
+			return true;
+		}
+	}
+
+	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+}
+
+HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags)
+{
+	if (Cleaning) {
+		return oPresent(SwapChain, SyncInterval, Flags);
+	}
+
+	GVars.AutoSetVariables();
+
+	if (Frames % 20 == 0) // Every 20 frames, ensure cheats are correctly applied
+	{
+		if (GVars.ReadyOrNotChar && GVars.ReadyOrNotChar->GetEquippedWeapon())
+		{
+			GVars.ReadyOrNotChar->bGodMode = CVars.GodMode;
+			GVars.ReadyOrNotChar->GetEquippedWeapon()->bInfiniteAmmo = CVars.InfAmmo;
+		}
+	}
+
+	if (!init)
+	{
+		if (SUCCEEDED(SwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice)))
+		{
+			HWND hwnd = FindWindow(L"UnrealWindow", nullptr);
+			pDevice->GetImmediateContext(&pContext);
+
+			pSwapChain = SwapChain;
+			SwapChain->GetDesc(&sd);
+
+			if (!hwnd) hwnd = GetForegroundWindow();
+
+			InitImGui(hwnd);
+
+			// Hook WndProc for input handling
+			if (hwnd) {
+				oWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
+			}
+
+			init = true;
+		}
+	}
+
+	if (!oPresent)
+		return 0;
+
+	if (!ImGui::GetCurrentContext())
+		return oPresent(SwapChain, SyncInterval, Flags);
+
+	// Start the ImGui frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	if (ShowMenu) {
+		ImGui::Begin("Free Ready or Not Cheat by PeachMarrow12", nullptr, ImGuiWindowFlags_NoCollapse);
+
+
+		ImGui::SeparatorText("Hello, Have Fun Cheating!");
+
+		if (ImGui::TreeNode("Configuration"))
+		{
+			if (ImGui::TreeNode("Aimbot Settings"))
+			{
+				ImGui::SliderFloat("Aimbot FOV", &AimbotSettings.MaxFOV, 0.01f, 180.0f);
+
+				ImGui::Checkbox("Should Aimbot require LOS", &AimbotSettings.LOS);
+				AddDefaultTooltip("Targets must be visible; line - of - sight required.");
+
+				ImGui::Checkbox("Target Civilians", &AimbotSettings.TargetCivilians);
+
+				ImGui::Checkbox("Target Dead", &AimbotSettings.TargetDead);
+
+				ImGui::Checkbox("Target Arrested", &AimbotSettings.TargetArrested);
+
+				ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 10000);
+
+				ImGui::Checkbox("Smooting", &AimbotSettings.Smooth);
+
+				ImGui::SliderFloat("Smoothing Vector", &AimbotSettings.SmoothingVector, 1.0f, 20.0f);
+
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("ESP Settings"))
+			{
+				ImGui::Checkbox("Show Team", &ESPSettings.ShowTeam);
+
+				ImGui::Checkbox("Show Box", &ESPSettings.ShowBox);
+
+				ImGui::ColorEdit4("Suspect Color", (float*)&ESPSettings.SuspectColor, ImGuiColorEditFlags_NoInputs);
+
+				ImGui::ColorEdit4("Civilian Color", (float*)&ESPSettings.CivilianColor, ImGuiColorEditFlags_NoInputs);
+
+				ImGui::ColorEdit4("Dead Color", (float*)&ESPSettings.DeadColor, ImGuiColorEditFlags_NoInputs);
+
+				ImGui::ColorEdit4("Team Color", (float*)&ESPSettings.TeamColor, ImGuiColorEditFlags_NoInputs);
+
+				ImGui::ColorEdit4("Arrested Color", (float*)&ESPSettings.ArrestColor, ImGuiColorEditFlags_NoInputs);
+
+				ImGui::TreePop();
+			}
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::Checkbox("GodMode", &CVars.GodMode))
+		{
+			Cheats::ToggleGodMode();
+		}
+
+		ImGui::Checkbox("Aimbot", &CVars.Aimbot);
+
+		ImGui::Checkbox("ESP", &CVars.ESP);
+
+		if (ImGui::Checkbox("Infinite Ammo", &CVars.InfAmmo))
+		{
+			Cheats::ToggleInfAmmo();
+		}
+
+		if (ImGui::Button("Upgrade Weapon"))
+		{
+			Cheats::UpgradeWeaponStats();
+		}
+		AddDefaultTooltip("Removes recoil & spread, adds auto-fire, and boosts fire rate.");
+
+		ImGui::End();
+	}
+
+	if (CVars.ESP)
+		Cheats::RenderESP();
+
+	if (pRenderTargetView) {
+		pContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr);
+
+		D3D11_VIEWPORT vp = {};
+		vp.Width = (float)sd.BufferDesc.Width;
+		vp.Height = (float)sd.BufferDesc.Height;
+		vp.MinDepth = 0.0f;
+		vp.MaxDepth = 1.0f;
+		vp.TopLeftX = 0;
+		vp.TopLeftY = 0;
+		pContext->RSSetViewports(1, &vp);
+	}
+
+	ImGui::Render();
+	
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	if (CVars.Aimbot)
+		Cheats::Aimbot();
+
+	return oPresent ? oPresent(SwapChain, SyncInterval, Flags) : S_OK;
+}
+
+// Attach hook
+void HookPresent()
+{
+	if (!pSwapChain) {
+		std::cout << "[ERROR] SwapChain is null...\n";
+		Cleaning = true;
+		Sleep(30);
+		return;
+	}
+
+	void** vTable = *reinterpret_cast<void***>(pSwapChain);
+	oPresent = (tPresent)vTable[8];
+
+	DWORD oldProtect;
+	VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+	vTable[8] = (void*)&hkPresent;
+	VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
+}
+
+DWORD MainThread(HMODULE hModule)
+{
+	AllocConsole();
+	FILE* Dummy;
+	freopen_s(&Dummy, "CONOUT$", "w", stdout);
+	freopen_s(&Dummy, "CONIN$", "r", stdin);
+
+	std::cout << "Cheat Injecting...\n";
+
+	int FailAmount = 0;
+
+	while (!GVars.World and FailAmount < 8) {
+		GVars.World = Utils::GetWorldSafe();
+		FailAmount++;
+		Sleep(100);
+	}
+
+	while (!GVars.PlayerController and FailAmount < 8) {
+		GVars.PlayerController = Utils::GetPlayerController();
+		FailAmount++;
+		Sleep(100);
+	}
+
+	if (FailAmount >= 8) {
+		std::cout << "[ERROR] Failed to get essential game pointers. Exiting...\n";
+		Cleaning = true;
+		Sleep(200);
+		Cleanup(hModule);
+		return 0;
+	}
+	Sleep(1000); // Wait a second to ensure everything is loaded
+
+	HookSwapChain(); // Create a dummy device and swapchain to get the vtable
+	HookPresent(); // Hook the Present function
+
+	std::cout << "Cheat Injected\n";
+
+	LoadSettings();
+
+	while (!Cleaning)
+	{
+		if (GetAsyncKeyState(VK_END) & 1) // Exit with END key
+		{
+			std::cout << "Exiting...\n";
+			Cleaning = true;
+			break;
+		}
+
+		if (GetAsyncKeyState(VK_INSERT) & 1) // Toggle Cheat Menu with INSERT key
+		{
+			ShowMenu = !ShowMenu;
+			std::cout << "Menu: " << (ShowMenu ? "ON" : "OFF") << "\n";
+			ImGui::GetIO().MouseDrawCursor = ShowMenu;
+			ShowCursor(false);
+		}
+
+		Sleep(100);
+	}
+
+	SaveSettings();
+
+	Cleanup(hModule);
+
+	return 0;
+}
+
+// DLL entry point
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
+	switch (reason) {
+	case DLL_PROCESS_ATTACH:
+		DisableThreadLibraryCalls(hModule);
+		CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, nullptr);
+		break;
+	case DLL_PROCESS_DETACH:
+		Cleaning = true;
+		break;
+	}
+	
+	return TRUE;
+}
+
 void HookSwapChain()
 {
 	ZeroMemory(&sd, sizeof(DXGI_SWAP_CHAIN_DESC));
 	sd.BufferCount = 1;
 	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sd.BufferDesc.RefreshRate = { 240, 1 };
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.OutputWindow = FindWindow(L"UnrealWindow", nullptr);
+	sd.OutputWindow = FindWindow(L"UnrealWindow", nullptr); //! Fix: Add Window Name to prevent having two windows with same class causing issues
 	sd.SampleDesc.Count = 1;
 	sd.SampleDesc.Quality = 0;
 	sd.Windowed = TRUE;
@@ -460,20 +420,101 @@ void HookSwapChain()
 	}
 }
 
-static void Cleanup(std::thread& AutoVarsThread, Variables* Vars, HMODULE hModule)
+void SaveSettings()
+{
+	if (!Settings.ShouldSave)
+		return;
+
+	std::ofstream file("settings.txt", std::ios::trunc);
+
+	if (!file.is_open()) return;
+
+	file.seekp(0);
+
+	file << ESPSettings.ShowTeam << '\n';
+	file << ESPSettings.ShowBox << '\n';
+	file << ESPSettings.SuspectColor.x << '\n' << ESPSettings.SuspectColor.y << '\n' << ESPSettings.SuspectColor.z << '\n' << ESPSettings.SuspectColor.w << '\n';
+	file << ESPSettings.CivilianColor.x << '\n' << ESPSettings.CivilianColor.y << '\n' << ESPSettings.CivilianColor.z << '\n' << ESPSettings.CivilianColor.w << '\n';
+	file << ESPSettings.DeadColor.x << '\n' << ESPSettings.DeadColor.y << '\n' << ESPSettings.DeadColor.z << '\n' << ESPSettings.DeadColor.w << '\n';
+	file << ESPSettings.TeamColor.x << '\n' << ESPSettings.TeamColor.y << '\n' << ESPSettings.TeamColor.z << '\n' << ESPSettings.TeamColor.w << '\n';
+	file << ESPSettings.ArrestColor.x << '\n' << ESPSettings.ArrestColor.y << '\n' << ESPSettings.ArrestColor.z << '\n' << ESPSettings.ArrestColor.w << '\n';
+	file << AimbotSettings.MaxFOV << '\n';
+	file << AimbotSettings.LOS << '\n';
+	file << AimbotSettings.TargetCivilians << '\n';
+	file << AimbotSettings.TargetDead << '\n';
+	file << AimbotSettings.TargetArrested << '\n';
+	file << AimbotSettings.MinDistance << '\n';
+	file << AimbotSettings.Smooth << '\n';
+	file << AimbotSettings.SmoothingVector << '\n';
+
+	file.close();
+}
+
+void LoadSettings()
+{
+	if (!Settings.ShouldLoad)
+		return;
+
+	std::ifstream infile("settings.txt");
+
+	if (!infile.is_open()) return;
+
+	infile.seekg(0);
+
+	infile >> ESPSettings.ShowTeam;
+	infile >> ESPSettings.ShowBox;
+	infile >> ESPSettings.SuspectColor.x >> ESPSettings.SuspectColor.y >> ESPSettings.SuspectColor.z >> ESPSettings.SuspectColor.w;
+	infile >> ESPSettings.CivilianColor.x >> ESPSettings.CivilianColor.y >> ESPSettings.CivilianColor.z >> ESPSettings.CivilianColor.w;
+	infile >> ESPSettings.DeadColor.x >> ESPSettings.DeadColor.y >> ESPSettings.DeadColor.z >> ESPSettings.DeadColor.w;
+	infile >> ESPSettings.TeamColor.x >> ESPSettings.TeamColor.y >> ESPSettings.TeamColor.z >> ESPSettings.TeamColor.w;
+	infile >> ESPSettings.ArrestColor.x >> ESPSettings.ArrestColor.y >> ESPSettings.ArrestColor.z >> ESPSettings.ArrestColor.w;
+	infile >> AimbotSettings.MaxFOV;
+	infile >> AimbotSettings.LOS;
+	infile >> AimbotSettings.TargetCivilians;
+	infile >> AimbotSettings.TargetDead;
+	infile >> AimbotSettings.TargetArrested;
+	infile >> AimbotSettings.MinDistance;
+	infile >> AimbotSettings.Smooth;
+	infile >> AimbotSettings.SmoothingVector;
+
+	infile.close();
+}
+
+void Cleanup(HMODULE hModule)
 {
 	Cleaning = true;
 	std::cout << "Cleaning up...\n";
-	// Properly join the thread before exiting
-	if (AutoVarsThread.joinable()) {
-		AutoVarsThread.join();
+
+	Sleep(300); // Wait a bit to ensure no threads are using resources
+
+	if (ImGui::GetCurrentContext())
+	{
+		ImGui::GetIO().MouseDrawCursor = false;
+		ImGui_ImplDX11_Shutdown();
+		ImGui_ImplWin32_Shutdown();
+		ImGui::DestroyContext();
 	}
 
-	Sleep(300); // Give some time for the thread to finish
+	HWND hwnd = FindWindow(L"UnrealWindow", nullptr);
+	if (hwnd && oWndProc)
+	{
+		SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)oWndProc);
+		oWndProc = nullptr;
+	}
 
-	ImGui_ImplDX11_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
+	if (pSwapChain)
+	{
+		void** vTable = *reinterpret_cast<void***>(pSwapChain);
+		if (vTable && oPresent)
+		{
+			DWORD oldProtect;
+			if (VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect))
+			{
+				vTable[8] = (void*)oPresent;
+				VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
+			}
+		}
+	}
 
 	// Clean up DirectX resources
 	if (pRenderTargetView) {
@@ -496,18 +537,9 @@ static void Cleanup(std::thread& AutoVarsThread, Variables* Vars, HMODULE hModul
 		oPresent = nullptr;
 	}
 
-	// Clean up Variables
-	if (Vars) {
-		delete Vars;
-		Vars = nullptr;
-	}
-
 	std::cout << "Cleanup complete. Unloading DLL...\n";
-	Sleep(200);
 
 	// Clean up console
 	FreeConsole();
-
-	// Exit the thread and unload the DLL
 	FreeLibraryAndExitThread(hModule, 0);
 }

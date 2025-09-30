@@ -7,28 +7,25 @@
 using namespace SDK;
 
 void Cheats::ToggleGodMode() {
-	auto Vars = Utils::GetVariables();
-	if (!Vars || !Vars->PlayerController) return;
-	if (!Vars || !Vars->ReadyOrNotChar) return;
-	auto RONC = Vars->ReadyOrNotChar;
-	RONC->bGodMode = !RONC->bGodMode;
+	if (!GVars.PlayerController) return;
+	if (!GVars.ReadyOrNotChar) return;
+	auto RONC = GVars.ReadyOrNotChar;
+	RONC->bGodMode = CVars.GodMode;
 }
 
 void Cheats::ToggleInfAmmo() {
-	auto Vars = Utils::GetVariables();
-	if (!Vars || !Vars->PlayerController) return;
-	if (!Vars || !Vars->ReadyOrNotChar) return;
-	auto RONC = Vars->ReadyOrNotChar;
+	if (!GVars.PlayerController) return;
+	if (!GVars.ReadyOrNotChar) return;
+	auto RONC = GVars.ReadyOrNotChar;
 	auto Character = (APlayerCharacter*)RONC;
 	Character->GetEquippedWeapon()->bInfiniteAmmo = !Character->GetEquippedWeapon()->bInfiniteAmmo;
 }
 
 void Cheats::UpgradeWeaponStats()
 {
-	auto* Vars = Utils::GetVariables();
-	if (!Vars || !Vars->PlayerController) return;
-	if (!Vars || !Vars->ReadyOrNotChar) return;
-	auto* RONC = Vars->ReadyOrNotChar;
+	if (!GVars.PlayerController) return;
+	if (!GVars.ReadyOrNotChar) return;
+	auto* RONC = GVars.ReadyOrNotChar;
 	auto* Character = (APlayerCharacter*)RONC;
 	auto* Gun = Character->GetEquippedWeapon();
 
@@ -98,9 +95,3 @@ void Cheats::UpgradeWeaponStats()
 	Gun->PenetrationDistance = 10000;
 	Gun->RefireDelay = 0.0f;
 }
-
-//void Cheats::SilentAim(Variables* Vars)
-//{
-//	Vars->Level->Actors;
-//	Iterators::TArrayIterator<TArray<class AActor*>> It(Vars->Level->Actors);
-//}

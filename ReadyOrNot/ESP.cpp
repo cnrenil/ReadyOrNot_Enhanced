@@ -112,7 +112,6 @@ BonePair CivilianSkeletonBones[] = {
     {100, 103}, // calf_RI -> foot_RI
 };
 
-static bool ESPEnabled = false;
 bool IsSuspect = false;
 bool IsSwat = false;
 int32 ViewportX = 0.0f;
@@ -120,21 +119,18 @@ int32 ViewportY = 0.0f;
 
 auto RenderColor = IM_COL32(255, 255, 255, 255);
 
-void Cheats::ToggleESP() {
-	ESPEnabled = !ESPEnabled;
-}
-
-void Cheats::RenderESP(Variables* Vars)
+void Cheats::RenderESP()
 {
-    if (!ESPEnabled) return;
-    if (!Vars || !Vars->PlayerController || !Vars->Character) return;
+	if (!CVars.ESP) return;
+    if (!GVars.PlayerController || !GVars.Character) return;
 
-    ULevel* Level = Vars->Level;
-    if (!Level) return;
+    ULevel* Level = GVars.Level;
+    if (!Level) return; 
 
-    for (AActor* Actor : Level->Actors)
+	TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+    for (AActor* Actor : ActorsCopy)
     {
-        if (!Actor) continue;
+    	if (!Actor) continue;
 
         AReadyOrNotCharacter* TargetActor = nullptr;
 
@@ -143,7 +139,7 @@ void Cheats::RenderESP(Variables* Vars)
 			TargetActor = (AReadyOrNotCharacter*)Actor;
 			IsSwat = false;
         }
-		else if (ESPSettings.ShowTeam && (Actor->IsA(ASWATCharacter::StaticClass())))
+		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass() || Actor->IsA(APlayerCharacter::StaticClass()))) 
 		{
 			TargetActor = (AReadyOrNotCharacter*)Actor;
             IsSuspect = false;
@@ -152,7 +148,7 @@ void Cheats::RenderESP(Variables* Vars)
     	else
 			continue;
 
-        if (!TargetActor || TargetActor == Vars->Character) continue;
+        if (!TargetActor || TargetActor == GVars.Character) continue;
 
         if (!IsSwat && TargetActor->IsSuspect())
             IsSuspect = true;
@@ -164,8 +160,8 @@ void Cheats::RenderESP(Variables* Vars)
 
 		if (IsSwat) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.TeamColor);
 
-        if (TargetActor->IsDeadOrUnconscious()) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.DeadColor);
-        if (!IsSwat && TargetActor->IsArrested()) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.ArrestColor);
+        if (TargetActor->IsDeadOrUnconscious() || TargetActor->IsIncapacitated()) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.DeadColor);
+        if (!IsSwat && TargetActor->IsArrestedOrSurrendered() || !IsSwat && TargetActor->bIsBeingArrested) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.ArrestColor);
 
         USkeletalMeshComponent* Mesh = TargetActor->Mesh;
         if (!Mesh) continue;
@@ -193,10 +189,10 @@ void Cheats::RenderESP(Variables* Vars)
             FVector ChildPos = Mesh->GetBoneTransform(ChildName, ERelativeTransformSpace::RTS_World).Translation;
 
             FVector2D ParentScreen, ChildScreen, ActorScreen;
-            if (Vars->PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, false) &&
-                Vars->PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, false))
+            if (GVars.PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, false) &&
+                GVars.PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, false))
             {
-                Vars->PlayerController->GetViewportSize(&ViewportX, &ViewportY);
+                GVars.PlayerController->GetViewportSize(&ViewportX, &ViewportY);
 				if (ParentScreen.X == 0.f && ParentScreen.Y == 0.f or ParentScreen.X > ViewportX or ParentScreen.Y > ViewportY) continue;
                 ImGui::GetBackgroundDrawList()->AddLine(
                     ImVec2(ParentScreen.X, ParentScreen.Y),
@@ -205,9 +201,9 @@ void Cheats::RenderESP(Variables* Vars)
                     1.5f
                 );
            }
-            if (ESPSettings.ShowBox && Vars->PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, false))
+            if (ESPSettings.ShowBox && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, false))
             {
-            	float distance = Vars->ReadyOrNotChar->GetDistanceTo(Actor);
+            	float distance = GVars.ReadyOrNotChar->GetDistanceTo(Actor);
                 float boxHeight = 200000.0f / distance;     // tweak scaling factor
                 float boxWidth = boxHeight / 2.0f;
 

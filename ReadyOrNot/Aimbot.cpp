@@ -1,31 +1,23 @@
-#include <Windows.h>
-
 #include "Cheats.h"
 #include "Utils.h"
 #include <chrono>
 #include <numbers>
 
-bool AimbotEnabled = false;
-
-void Cheats::ToggleAimbot() {
-	AimbotEnabled = !AimbotEnabled;
-}
-
-void Cheats::Aimbot(Variables* Vars)
+void Cheats::Aimbot()
 {
-    if (!AimbotEnabled) return;
+    if (!CVars.Aimbot) return;
 
-    if (!Vars || !Vars->PlayerController || !Vars->Character) return;
+    if (!GVars.PlayerController || !GVars.Character) return;
 
-    ULevel* Level = Vars->Level;
+    ULevel* Level = GVars.Level;
     if (!Level) return;
 
-    auto* PC = Vars->PlayerController;
+    auto* PC = GVars.PlayerController;
 
     FRotator CurrentRot;
     FVector PlayerPos;
-    Vars->Character->GetActorEyesViewPoint(&PlayerPos, &CurrentRot);
-    FVector  Forward = ForwardFromRot(CurrentRot);
+    GVars.Character->GetActorEyesViewPoint(&PlayerPos, &CurrentRot);
+    FVector Forward = ForwardFromRot(CurrentRot);
 
     AActor* BestTarget = nullptr;
     float BestAngle = 99999.0f;
@@ -47,7 +39,7 @@ void Cheats::Aimbot(Variables* Vars)
 		if (!AimbotSettings.TargetArrested && TargetActor->IsArrested()) continue;
         if (AimbotSettings.LOS && !PC->LineOfSightTo(TargetActor, PlayerPos, false)) continue;
 
-        if (!TargetActor || TargetActor == Vars->Character) continue;
+        if (!TargetActor || TargetActor == GVars.Character) continue;
         
         FVector TargetPos = TargetActor->K2_GetActorLocation();
 
@@ -94,5 +86,22 @@ void Cheats::Aimbot(Variables* Vars)
     TargetRot.Roll = 0.f;
     ClampRotator(TargetRot);
 
-    PC->ControlRotation = TargetRot;
+    FRotator FinalRot = TargetRot;
+
+    if (AimbotSettings.Smooth)
+    {
+        // Normalize current rotation too
+        CurrentRot.Normalize();
+
+        // Calculate the shortest rotation delta using UE5's method
+        FRotator DeltaRot = (TargetRot - CurrentRot).GetNormalized();
+
+        // Apply smoothing
+        FinalRot = CurrentRot + (DeltaRot / AimbotSettings.SmoothingVector);
+
+        // Normalize the final result
+        FinalRot.Normalize();
+    }
+
+    PC->ControlRotation = FinalRot;
 }

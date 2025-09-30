@@ -6,43 +6,48 @@
 
 using namespace SDK;
 
-// Helper to get UWorld
-UWorld* Utils::GetWorldSafe()
+// can return nullptr
+UWorld* Utils::GetWorldSafe() 
 {
-GetWorldStart:
-    UEngine* Engine = UEngine::GetEngine();
-    if (!Engine) {
-        printf("[Error] Engine not found!\n");
-        Sleep(400);
-        goto GetWorldStart; // Retry getting the world
-    }
+    UWorld* World = nullptr;
+    int i = 0;
+    while (i < 50) {
+        i++;
+        UEngine* Engine = UEngine::GetEngine();
+        if (!Engine) {
+            printf("[Error] Engine not found!\n");
+            continue;
+        }
 
-    UGameViewportClient* Viewport = Engine->GameViewport;
-    if (!Viewport) {
-        printf("[Error] GameViewport not found!\n");
-        Sleep(400);
-        goto GetWorldStart; // Retry getting the world
-    }
+        UGameViewportClient* Viewport = Engine->GameViewport;
+        if (!Viewport) {
+            printf("[Error] GameViewport not found!\n");
+            continue;
+        }
 
-    UWorld* World = Viewport->World;
-    if (!World) {
-        printf("[Error] World not found!\n");
-        Sleep(400);
-        goto GetWorldStart; // Retry getting the world
+        World = Viewport->World;
+        if (!World) {
+            printf("[Error] World not found!\n");
+            continue;
+        }
+		break; // Successfully obtained World
     }
-
     return World;
 }
 
+// can return nullptr
 APlayerController* Utils::GetPlayerController()
 {
-    while (true) {
-        UWorld* World = Utils::GetWorldSafe();
+    int i = 0;
+	APlayerController* PlayerController = nullptr;
+
+    while (i < 50) {
+        i++;
+        UWorld* World = GetWorldSafe();
         if (!World) return nullptr; // Error already logged in GetWorldSafe
         UGameInstance* GameInstance = World->OwningGameInstance;
         if (!GameInstance) {
             printf("[Error] GameInstance not found!\n");
-            Sleep(400);
         }
         if (GameInstance->LocalPlayers.Num() <= 0) {
             printf("[Error] No LocalPlayers in GameInstance!\n");
@@ -50,22 +55,13 @@ APlayerController* Utils::GetPlayerController()
         ULocalPlayer* LocalPlayer = GameInstance->LocalPlayers[0];
         if (!LocalPlayer) {
             printf("[Error] LocalPlayer is null!\n");
-            Sleep(400);
         }
-        APlayerController* PlayerController = LocalPlayer->PlayerController;
+        PlayerController = LocalPlayer->PlayerController;
         if (!PlayerController) {
             printf("[Error] PlayerController not found!\n");
-            Sleep(400);
         }
-        return PlayerController;
     }
-}
-
-Variables* Utils::GetVariables()
-{
-    static Variables Vars;
-    Variables::AutoSetVariables(Vars);
-    return &Vars;
+    return PlayerController;
 }
 
 unsigned Utils::ConvertImVec4toU32(ImVec4 Color)

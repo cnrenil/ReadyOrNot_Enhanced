@@ -1,23 +1,20 @@
 #pragma once
+#include "Cheats.h"
 #include "SDK/Engine_classes.hpp"
 #include "SDK/ReadyOrNot_classes.hpp"
 #include "ImGui/imgui.h"
 
-class Variables;
 using namespace SDK;
 
-class Utils
+struct Utils
 {
-public:
-	static UWorld* GetWorldSafe();
-	static APlayerController* GetPlayerController();
-	static Variables* GetVariables();
+	static UWorld* GetWorldSafe(); // can return nullptr
+	static APlayerController* GetPlayerController(); // can return nullptr
 	static unsigned ConvertImVec4toU32(ImVec4 Color);
 };
 
-class Variables
+struct Variables
 {
-public:
 	APlayerController* PlayerController = nullptr;
 	APawn* Pawn = nullptr;
 	ACharacter* Character = nullptr;
@@ -27,68 +24,69 @@ public:
 
 	// Constructor to initialize variables safely
 	Variables() {
-		AutoSetVariables(*this);
+		AutoSetVariables();
 	}
 
-	static void AutoSetVariables(Variables& vars) {
+	void AutoSetVariables() {
+
 		// Get PlayerController first
 		APlayerController* currentPC = Utils::GetPlayerController();
 		if (!currentPC) {
 			// Clear all dependent variables if PlayerController is null
-			vars.PlayerController = nullptr;
-			vars.Pawn = nullptr;
-			vars.Character = nullptr;
-			vars.ReadyOrNotChar = nullptr;
-			vars.World = Utils::GetWorldSafe(); // World can exist without PlayerController
-			vars.Level = vars.World ? vars.World->PersistentLevel : nullptr;
+			this->PlayerController = nullptr;
+			this->Pawn = nullptr;
+			this->Character = nullptr;
+			this->ReadyOrNotChar = nullptr;
+			this->World = Utils::GetWorldSafe(); // World can exist without PlayerController
+			this->Level = this->World ? this->World->PersistentLevel : nullptr;
 			return;
 		}
 
 		// Update PlayerController if changed
-		if (vars.PlayerController != currentPC) {
-			vars.PlayerController = currentPC;
+		if (this->PlayerController != currentPC) {
+			this->PlayerController = currentPC;
 			// Reset dependent variables when PlayerController changes
-			vars.Pawn = nullptr;
-			vars.Character = nullptr;
-			vars.ReadyOrNotChar = nullptr;
+			this->Pawn = nullptr;
+			this->Character = nullptr;
+			this->ReadyOrNotChar = nullptr;
 		}
 
 		// Update Pawn
-		if (vars.PlayerController && vars.Pawn != vars.PlayerController->Pawn) {
-			vars.Pawn = vars.PlayerController->Pawn;
+		if (this->PlayerController && this->Pawn != this->PlayerController->Pawn) {
+			this->Pawn = this->PlayerController->Pawn;
 			// Reset Character-dependent variables when Pawn changes
-			vars.Character = nullptr;
-			vars.ReadyOrNotChar = nullptr;
+			this->Character = nullptr;
+			this->ReadyOrNotChar = nullptr;
 		}
 
 		// Update Character
-		if (vars.PlayerController && vars.Character != vars.PlayerController->Character) {
-			vars.Character = vars.PlayerController->Character;
+		if (this->PlayerController && this->Character != this->PlayerController->Character) {
+			this->Character = this->PlayerController->Character;
 			// Reset ReadyOrNotChar when Character changes
-			vars.ReadyOrNotChar = nullptr;
+			this->ReadyOrNotChar = nullptr;
 		}
 
 		// Update ReadyOrNotChar
-		if (vars.Character) {
-			AReadyOrNotCharacter* newReadyOrNotChar = static_cast<AReadyOrNotCharacter*>(vars.Character);
-			if (vars.ReadyOrNotChar != newReadyOrNotChar) {
-				vars.ReadyOrNotChar = newReadyOrNotChar;
+		if (this->Character) {
+			AReadyOrNotCharacter* newReadyOrNotChar = static_cast<AReadyOrNotCharacter*>(this->Character);
+			if (this->ReadyOrNotChar != newReadyOrNotChar) {
+				this->ReadyOrNotChar = newReadyOrNotChar;
 			}
 		}
 
 		// Update World
 		UWorld* currentWorld = Utils::GetWorldSafe();
-		if (vars.World != currentWorld) {
-			vars.World = currentWorld;
-			vars.Level = nullptr; // Reset Level when World changes
+		if (this->World != currentWorld) {
+			this->World = currentWorld;
+			this->Level = nullptr; // Reset Level when World changes
 		}
 
 		// Update Level
-		if (vars.World && vars.Level != vars.World->PersistentLevel) {
-			vars.Level = vars.World->PersistentLevel;
+		if (this->World && this->Level != this->World->PersistentLevel) {
+			this->Level = this->World->PersistentLevel;
 		}
 	}
-};
+} inline GVars;
 
 static inline float Dot3(const FVector& A, const FVector& B)
 {
@@ -120,9 +118,10 @@ static inline float AngleDegFromDot(float Dot)
 
 static inline void ClampRotator(FRotator& R)
 {
-	// Unreal style clamping (optional)
-	while (R.Yaw > 180.f)  R.Yaw -= 360.f;
-	while (R.Yaw < -180.f) R.Yaw += 360.f;
+	// Use UE5's built-in normalization instead of manual clamping
+	R.Normalize();
+
+	// Still clamp pitch for gameplay reasons
 	if (R.Pitch > 89.f)  R.Pitch = 89.f;
 	if (R.Pitch < -89.f) R.Pitch = -89.f;
 	R.Roll = 0.f;

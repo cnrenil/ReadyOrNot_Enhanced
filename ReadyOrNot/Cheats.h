@@ -4,7 +4,7 @@
 
 #include "Utils.h"
 
-struct EspSettings {
+struct EspSettingsstruct {
 	bool ShowTeam = true;
 	bool ShowBox = false;
 	ImVec4 SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
@@ -15,23 +15,36 @@ struct EspSettings {
 
 } inline ESPSettings;
 
-struct AimbotSettings {
+struct AimbotSettingsstruct {
 	float MaxFOV = 15.0f;
 	bool LOS = true;
 	bool TargetCivilians = false;
 	bool TargetDead = false;
 	bool TargetArrested = false;
 	float MinDistance = 50.0f;
+	bool Smooth = false;
+	float SmoothingVector = 5.0f;
 } inline AimbotSettings;
 
-class Cheats
+struct CVarsstruct
 {
-public:
+	bool GodMode = false;
+	bool InfAmmo = false;
+	bool Aimbot = false;
+	bool ESP = false;
+} inline CVars;
+
+struct Settingsstruct
+{
+	bool ShouldSave = true;
+	bool ShouldLoad = true;
+} inline Settings;
+
+struct Cheats
+{
 	static void ToggleGodMode();
 	static void ToggleInfAmmo();
-	static void ToggleAimbot();
-	static void Aimbot(Variables* Vars);
+	static void Aimbot();
 	static void UpgradeWeaponStats();
-	static void ToggleESP();
-	static void RenderESP(Variables* Vars);
+	static void RenderESP();
 };
