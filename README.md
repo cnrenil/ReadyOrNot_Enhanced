@@ -38,6 +38,7 @@ This project is written in C++ and uses ImGui and DirectX11. It is intended for 
 - Visual Studio 2022
 - Windows SDK (latest version)
 - DirectX 11 libraries (usually included with the Windows SDK)
+- ImGui
 
 ## Building
 1. Open `ReadyOrNot.sln` in Visual Studio 2022.
