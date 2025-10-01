@@ -20,6 +20,8 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 - ESP
 - Godmode
 - Infinite ammo
+- Arrest all civs or suspects
+- Kill all civs or suspects
 ---
 ## Known issues:
 - Changing resolutions while the cheat is injected will crash your game
