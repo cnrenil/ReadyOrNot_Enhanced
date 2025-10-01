@@ -68,3 +68,23 @@ unsigned Utils::ConvertImVec4toU32(ImVec4 Color)
 {
     return IM_COL32((int)(Color.x * 255.0f), (int)(Color.y * 255.0f), (int)(Color.z * 255.0f), (int)(Color.w * 255.0f));
 }
+
+void Utils::PrintActors(const char* Exclude)
+{
+	ULevel* Level = GVars.Level;
+	if (Level)
+	{
+        TArray<AActor*> Actors = Level->Actors;
+        for (int i = 0; i < Actors.Num(); i++)
+        {
+            AActor* Actor = Actors[i];
+            if (Actor)
+            {
+                if (Exclude && Actor->GetName().find(Exclude) != std::string::npos)
+					continue;
+
+                printf("Actor %d: %s - Class: %s\n", i, Actor->GetName().c_str(), Actor->Class->Name.ToString().c_str());
+            }
+		}
+	}
+}

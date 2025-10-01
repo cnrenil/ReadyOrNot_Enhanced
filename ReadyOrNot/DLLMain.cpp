@@ -29,6 +29,7 @@ static float AimbotFOV = 15.0f;
 static bool ShowMenu = true;
 static bool Cleaning = false;
 bool init = false;
+bool Debug = false;
 
 int Frames = 0;
 
@@ -237,7 +238,18 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				ImGui::TreePop();
 			}
 
+			ImGui::Checkbox("Debug", &Debug);
+			AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
+
 			ImGui::TreePop();
+		}
+
+		if (Debug)
+		{
+			if (ImGui::Button("Print Actors"))
+			{
+				Utils::PrintActors(nullptr);
+			}
 		}
 
 		if (ImGui::Checkbox("GodMode", &CVars.GodMode))
@@ -260,11 +272,86 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		}
 		AddDefaultTooltip("Removes recoil & spread, adds auto-fire, and boosts fire rate.");
 
+		ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 10);
+		ImGui::SameLine();
+		ImGui::Checkbox("Enable Speed", &CVars.SpeedEnabled);
+
+		if (ImGui::Button("Kill All Suspects"))
+		{
+			ULevel* Level = GVars.Level;
+			if (Level) {
+				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+				for (AActor* Actor : ActorsCopy)
+				{
+					if (Actor->IsA(ASuspectCharacter::StaticClass()))
+					{
+						((AReadyOrNotCharacter*)Actor)->Server_Kill();
+					}
+				}
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Kill All Civilians"))
+		{
+			ULevel* Level = GVars.Level;
+			if (Level) {
+				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+				for (AActor* Actor : ActorsCopy)
+				{
+					if (Actor->IsA(ACivilianCharacter::StaticClass()))
+					{
+						((AReadyOrNotCharacter*)Actor)->Server_Kill();
+					}
+				}
+			}
+		}
+
+		if (ImGui::Button("Arrest All Suspects"))
+		{
+			ULevel* Level = GVars.Level;
+			if (Level) {
+				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+				for (AActor* Actor : ActorsCopy)
+				{
+					if (Actor->IsA(ASuspectCharacter::StaticClass()))
+					{
+						AReadyOrNotCharacter* Char = (AReadyOrNotCharacter*)Actor;
+						if (Char->IsArrested()) continue; // Can't re-arrest already arrested civilians or it will crash
+						Char->Arrest(GVars.ReadyOrNotChar);
+						Char->ArrestComplete(GVars.ReadyOrNotChar, nullptr);
+						GVars.ReadyOrNotChar->Server_ReportToTOC(Char, false, false);
+					}
+				}
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Arrest All Civilians"))
+		{
+			ULevel* Level = GVars.Level;
+			if (Level) {
+				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+				for (AActor* Actor : ActorsCopy)
+				{
+					if (Actor->IsA(ACivilianCharacter::StaticClass()))
+					{
+						AReadyOrNotCharacter* Char = (AReadyOrNotCharacter*)Actor;
+						if (Char->IsArrested()) continue; // Can't re-arrest already arrested civilians or it will crash
+						Char->Arrest(GVars.ReadyOrNotChar);
+						Char->ArrestComplete(GVars.ReadyOrNotChar, nullptr);
+						GVars.ReadyOrNotChar->Server_ReportToTOC(Char, false, false);
+					}
+				}
+			}
+		}
+
 		ImGui::End();
 	}
 
 	if (CVars.ESP)
 		Cheats::RenderESP();
+
+	if (CVars.SpeedEnabled)
+		Cheats::SetPlayerSpeed();
 
 	if (pRenderTargetView) {
 		pContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr);
@@ -484,6 +571,16 @@ void Cleanup(HMODULE hModule)
 {
 	Cleaning = true;
 	std::cout << "Cleaning up...\n";
+
+	CVars.Aimbot = false;
+	CVars.ESP = false;
+	CVars.GodMode = false;
+	CVars.InfAmmo = false;
+	CVars.SpeedEnabled = false;
+	CVars.Speed = 1;
+	Cheats::ToggleGodMode();
+	Cheats::ToggleInfAmmo();
+	Cheats::SetPlayerSpeed();
 
 	Sleep(300); // Wait a bit to ensure no threads are using resources
 

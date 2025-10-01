@@ -134,12 +134,12 @@ void Cheats::RenderESP()
 
         AReadyOrNotCharacter* TargetActor = nullptr;
 
-        if (Actor->IsA(ASuspectCharacter::StaticClass()) or Actor->IsA(ACivilianCharacter::StaticClass()))
+        if (Actor->IsA(ASuspectCharacter::StaticClass()) || Actor->IsA(ACivilianCharacter::StaticClass()))
         {
 			TargetActor = (AReadyOrNotCharacter*)Actor;
 			IsSwat = false;
         }
-		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass() || Actor->IsA(APlayerCharacter::StaticClass()))) 
+		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass())) 
 		{
 			TargetActor = (AReadyOrNotCharacter*)Actor;
             IsSuspect = false;
@@ -161,19 +161,19 @@ void Cheats::RenderESP()
 		if (IsSwat) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.TeamColor);
 
         if (TargetActor->IsDeadOrUnconscious() || TargetActor->IsIncapacitated()) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.DeadColor);
-        if (!IsSwat && TargetActor->IsArrestedOrSurrendered() || !IsSwat && TargetActor->bIsBeingArrested) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.ArrestColor);
+        else if (!IsSwat && TargetActor->IsArrestedOrSurrendered() || !IsSwat && TargetActor->bIsBeingArrested) RenderColor = Utils::ConvertImVec4toU32(ESPSettings.ArrestColor);
 
         USkeletalMeshComponent* Mesh = TargetActor->Mesh;
         if (!Mesh) continue;
 
-        if (!IsSuspect and Mesh->GetBoneName(45).ToString() == "Head")
+        if (!IsSuspect && Mesh->GetBoneName(45).ToString() == "Head")
         {
             memcpy(CivilianSkeletonBones, CivilianSkeletonBones_2, sizeof(CivilianSkeletonBones_2));
         }
         else
             memcpy(CivilianSkeletonBones, CivilianSkeletonBones_1, sizeof(CivilianSkeletonBones_1));
 
-        if (IsSuspect and Mesh->GetBoneName(45).ToString() == "Head")
+        if (IsSuspect && Mesh->GetBoneName(45).ToString() == "Head")
         {
             memcpy(SuspectSkeletonBones, SuspectSkeletonBones_2, sizeof(SuspectSkeletonBones_2));
         }
@@ -189,8 +189,8 @@ void Cheats::RenderESP()
             FVector ChildPos = Mesh->GetBoneTransform(ChildName, ERelativeTransformSpace::RTS_World).Translation;
 
             FVector2D ParentScreen, ChildScreen, ActorScreen;
-            if (GVars.PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, false) &&
-                GVars.PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, false))
+            if (GVars.PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, true) &&
+                GVars.PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, true))
             {
                 GVars.PlayerController->GetViewportSize(&ViewportX, &ViewportY);
 				if (ParentScreen.X == 0.f && ParentScreen.Y == 0.f or ParentScreen.X > ViewportX or ParentScreen.Y > ViewportY) continue;
@@ -201,7 +201,7 @@ void Cheats::RenderESP()
                     1.5f
                 );
            }
-            if (ESPSettings.ShowBox && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, false))
+            if (ESPSettings.ShowBox && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true))
             {
             	float distance = GVars.ReadyOrNotChar->GetDistanceTo(Actor);
                 float boxHeight = 200000.0f / distance;     // tweak scaling factor

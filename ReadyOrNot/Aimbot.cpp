@@ -36,7 +36,7 @@ void Cheats::Aimbot()
             continue;
 
 		if (!AimbotSettings.TargetDead && TargetActor->IsDeadOrUnconscious()) continue;
-		if (!AimbotSettings.TargetArrested && TargetActor->IsArrested()) continue;
+		if (!AimbotSettings.TargetArrested && TargetActor->IsArrestedOrSurrendered()) continue;
         if (AimbotSettings.LOS && !PC->LineOfSightTo(TargetActor, PlayerPos, false)) continue;
 
         if (!TargetActor || TargetActor == GVars.Character) continue;

@@ -11,6 +11,7 @@ struct Utils
 	static UWorld* GetWorldSafe(); // can return nullptr
 	static APlayerController* GetPlayerController(); // can return nullptr
 	static unsigned ConvertImVec4toU32(ImVec4 Color);
+	static void PrintActors(const char* Exclude);
 };
 
 struct Variables
@@ -118,10 +119,8 @@ static inline float AngleDegFromDot(float Dot)
 
 static inline void ClampRotator(FRotator& R)
 {
-	// Use UE5's built-in normalization instead of manual clamping
 	R.Normalize();
 
-	// Still clamp pitch for gameplay reasons
 	if (R.Pitch > 89.f)  R.Pitch = 89.f;
 	if (R.Pitch < -89.f) R.Pitch = -89.f;
 	R.Roll = 0.f;

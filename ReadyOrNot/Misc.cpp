@@ -18,7 +18,7 @@ void Cheats::ToggleInfAmmo() {
 	if (!GVars.ReadyOrNotChar) return;
 	auto RONC = GVars.ReadyOrNotChar;
 	auto Character = (APlayerCharacter*)RONC;
-	Character->GetEquippedWeapon()->bInfiniteAmmo = !Character->GetEquippedWeapon()->bInfiniteAmmo;
+	Character->GetEquippedWeapon()->bInfiniteAmmo = CVars.InfAmmo;
 }
 
 void Cheats::UpgradeWeaponStats()
@@ -94,4 +94,14 @@ void Cheats::UpgradeWeaponStats()
 	Gun->MuzzleFlashChance = 0;
 	Gun->PenetrationDistance = 10000;
 	Gun->RefireDelay = 0.0f;
+}
+
+void Cheats::SetPlayerSpeed()
+{
+	APlayerCharacter* PlayerChar = (APlayerCharacter*)GVars.ReadyOrNotChar;
+
+	if (PlayerChar)
+	{
+		PlayerChar->Server_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
+	}
 }

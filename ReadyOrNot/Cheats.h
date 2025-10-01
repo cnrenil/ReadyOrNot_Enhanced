@@ -32,6 +32,8 @@ struct CVarsstruct
 	bool InfAmmo = false;
 	bool Aimbot = false;
 	bool ESP = false;
+	float Speed = 1;
+	bool SpeedEnabled = false;
 } inline CVars;
 
 struct Settingsstruct
@@ -47,4 +49,5 @@ struct Cheats
 	static void Aimbot();
 	static void UpgradeWeaponStats();
 	static void RenderESP();
+	static void SetPlayerSpeed();
 };
