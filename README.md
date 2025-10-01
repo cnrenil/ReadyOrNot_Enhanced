@@ -38,6 +38,7 @@ This project is written in C++ and uses ImGui and DirectX11. It is intended for 
 - Visual Studio 2022
 - Windows SDK (latest version)
 - DirectX 11 libraries (usually included with the Windows SDK)
+- ImGui
 
 ## Building
 1. Open `ReadyOrNot.sln` in Visual Studio 2022.
@@ -49,3 +50,4 @@ This project is written in C++ and uses ImGui and DirectX11. It is intended for 
 - This build is meant to be injected into the RON game while running in DX11 mode and at or past the main menu.
 - Use the provided injector or your preferred injector to load the DLL.
 - Press `Insert` to open the cheat menu and `End` to uninject.
+- This project uses both [ImGui](https://github.com/ocornut/imgui) and [Dumper-7](https://github.com/Encryqed/Dumper-7)
