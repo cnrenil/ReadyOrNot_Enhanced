@@ -7,17 +7,18 @@ void Cheats::Aimbot()
 {
     if (!CVars.Aimbot) return;
 
-    if (!GVars.PlayerController || !GVars.Character) return;
+    if (!GVars.PlayerController || !GVars.Character || !GVars.ReadyOrNotChar) return;
 
     ULevel* Level = GVars.Level;
     if (!Level) return;
 
     auto* PC = GVars.PlayerController;
 
-    FRotator CurrentRot;
+    FRotator CurrentRot = GVars.PlayerController->GetControlRotation();
     FVector PlayerPos;
-    GVars.Character->GetActorEyesViewPoint(&PlayerPos, &CurrentRot);
-    FVector Forward = ForwardFromRot(CurrentRot);
+    GVars.PlayerController->GetPlayerViewPoint(&PlayerPos, nullptr);
+    
+	FVector Forward = ForwardFromRot(CurrentRot);
 
     AActor* BestTarget = nullptr;
     float BestAngle = 99999.0f;
@@ -41,9 +42,11 @@ void Cheats::Aimbot()
 
         if (!TargetActor || TargetActor == GVars.Character) continue;
         
-        FVector TargetPos = TargetActor->K2_GetActorLocation();
+        FVector TargetPos;
+        TargetActor->GetActorEyesViewPoint(&TargetPos, nullptr);
 
 		if (TargetPos.X == 0.f && TargetPos.Y == 0.f && TargetPos.Z == 0.f) continue;
+
 
         FVector Delta = FVector {TargetPos.X - PlayerPos.X,
                                  TargetPos.Y - PlayerPos.Y,
@@ -70,8 +73,8 @@ void Cheats::Aimbot()
     if (!BestTarget) return;
 
     // Compute desired aim rotation
-    FVector AimPos = ((AReadyOrNotCharacter*)BestTarget)->Mesh->GetBoneTransform(BasicFilesImpleUtils::StringToName(L"Head"), ERelativeTransformSpace::RTS_World).Translation;
-	//BestTarget->GetActorEyesViewPoint(&AimPos, nullptr);
+    FVector AimPos;/* = ((AReadyOrNotCharacter*)BestTarget)->Mesh->GetBoneTransform(BasicFilesImpleUtils::StringToName(L"Head"), ERelativeTransformSpace::RTS_World).Translation;*/
+	BestTarget->GetActorEyesViewPoint(&AimPos, nullptr);
 
     FVector D = FVector{ AimPos.X - PlayerPos.X,
                          AimPos.Y - PlayerPos.Y,
@@ -80,11 +83,12 @@ void Cheats::Aimbot()
 	float DistXY = sqrtf(D.X * D.X + D.Y * D.Y);
     if (DistXY < 0.0001f) return;
 
-    FRotator TargetRot;
-    TargetRot.Yaw = atan2f(D.Y, D.X) * (180.0f / std::numbers::pi);
-    TargetRot.Pitch = atan2f(D.Z, DistXY) * (180.0f / std::numbers::pi);
-    TargetRot.Roll = 0.f;
-    ClampRotator(TargetRot);
+	FVector Delta = AimPos - PlayerPos;
+    if (Delta.X == 0 && Delta.Y == 0 && Delta.Z == 0)
+        return;
+
+    FRotator TargetRot = Utils::VectorToRotation(Delta);
+    TargetRot.Normalize();
 
     FRotator FinalRot = TargetRot;
 
@@ -93,7 +97,7 @@ void Cheats::Aimbot()
         // Normalize current rotation too
         CurrentRot.Normalize();
 
-        // Calculate the shortest rotation delta using UE5's method
+        // Calculate the shortest rotation delta
         FRotator DeltaRot = (TargetRot - CurrentRot).GetNormalized();
 
         // Apply smoothing
@@ -103,5 +107,17 @@ void Cheats::Aimbot()
         FinalRot.Normalize();
     }
 
-    PC->ControlRotation = FinalRot;
+	FVector2D ScreenPos;
+	ImVec2 ScreenSize = ImGui::GetIO().DisplaySize;
+
+    if (AimbotSettings.DrawArrow && PC->ProjectWorldLocationToScreen(AimPos, &ScreenPos, true))
+    {
+        ImGui::GetBackgroundDrawList()->AddLine(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), ImVec2(ScreenPos.X, ScreenPos.Y), IM_COL32(255, 255, 255, 255), 2);
+		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), 5, IM_COL32(255, 0, 0, 255), 0);
+	}
+
+    PC->ProjectWorldLocationToScreen(AimPos, &ScreenPos, true);
+    ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(ScreenPos.X, ScreenPos.Y), 5, IM_COL32(0, 255, 0, 255), 0, 2);
+
+    PC->SetControlRotation(FinalRot);
 }

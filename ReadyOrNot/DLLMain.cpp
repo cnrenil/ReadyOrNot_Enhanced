@@ -22,6 +22,8 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
+using BasicFilesImpleUtils::StringToName;
+
 static bool ESPEnabled = false;
 static bool AimbotEnabled = false;
 static bool AimbotLOS = true;
@@ -344,11 +346,19 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			}
 		}
 
+		ImGui::Checkbox("Silent Aim", &CVars.SilentAim);
+
 		ImGui::End();
 	}
 
 	if (CVars.ESP)
 		Cheats::RenderESP();
+
+	if (CVars.SilentAim)
+		Cheats::SilentAim();
+
+	if (CVars.Aimbot)
+		Cheats::Aimbot();
 
 	if (CVars.SpeedEnabled)
 		Cheats::SetPlayerSpeed();
@@ -369,8 +379,6 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	ImGui::Render();
 	
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-	if (CVars.Aimbot)
-		Cheats::Aimbot();
 
 	return oPresent ? oPresent(SwapChain, SyncInterval, Flags) : S_OK;
 }

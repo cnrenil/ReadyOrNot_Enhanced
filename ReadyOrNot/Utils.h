@@ -12,6 +12,8 @@ struct Utils
 	static APlayerController* GetPlayerController(); // can return nullptr
 	static unsigned ConvertImVec4toU32(ImVec4 Color);
 	static void PrintActors(const char* Exclude);
+	static FRotator VectorToRotation(const FVector& Vec);
+	static AReadyOrNotCharacter* GetBestTarget(float AngleWeight, float MaxFOV, bool TargetCivilians);
 };
 
 struct Variables
@@ -33,12 +35,13 @@ struct Variables
 		// Get PlayerController first
 		APlayerController* currentPC = Utils::GetPlayerController();
 		if (!currentPC) {
+
 			// Clear all dependent variables if PlayerController is null
 			this->PlayerController = nullptr;
 			this->Pawn = nullptr;
 			this->Character = nullptr;
 			this->ReadyOrNotChar = nullptr;
-			this->World = Utils::GetWorldSafe(); // World can exist without PlayerController
+			this->World = Utils::GetWorldSafe();
 			this->Level = this->World ? this->World->PersistentLevel : nullptr;
 			return;
 		}

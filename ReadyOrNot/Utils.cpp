@@ -1,6 +1,7 @@
 #include "Utils.h"
 
 #include <imgui.h>
+#include <numbers>
 #include <Windows.h>
 #include "SDK/Engine_classes.hpp"
 
@@ -87,4 +88,62 @@ void Utils::PrintActors(const char* Exclude)
             }
 		}
 	}
+}
+
+FRotator Utils::VectorToRotation(const FVector& Vec)
+{
+    FRotator Rot;
+    Rot.Yaw = std::atan2(Vec.Y, Vec.X) * (180.0 / std::numbers::pi);
+    Rot.Pitch = std::atan2(Vec.Z, std::sqrt(Vec.X * Vec.X + Vec.Y * Vec.Y)) * (180.0 / std::numbers::pi);
+    Rot.Roll = 0.0;
+    return Rot;
+}
+
+AReadyOrNotCharacter* Utils::GetBestTarget(float AngleWeight, float MaxFOV, bool TargetCivilians)
+{
+    if (!GVars.PlayerController || !GVars.ReadyOrNotChar || !GVars.Level)
+        return nullptr;
+
+    FVector PlayerPos;
+    FRotator PlayerRot;
+    GVars.PlayerController->GetPlayerViewPoint(&PlayerPos, &PlayerRot);
+    FVector Forward = ForwardFromRot(PlayerRot);
+
+    float BestScore = 999999.f;
+    AReadyOrNotCharacter* BestTarget = nullptr;
+
+    for (AActor* Actor : GVars.Level->Actors)
+    {
+        if (!Actor || Actor == GVars.ReadyOrNotChar) continue;
+
+        if (!Actor->IsA(ASuspectCharacter::StaticClass()) &&
+            !(TargetCivilians && Actor->IsA(ACivilianCharacter::StaticClass())))
+            continue;
+
+        auto* Target = (AReadyOrNotCharacter*)Actor;
+
+        if (Target->IsDeadOrUnconscious() || Target->IsArrestedOrSurrendered()) continue;
+
+        FVector TargetPos;
+        Target->GetActorEyesViewPoint(&TargetPos, nullptr);
+
+        FVector Dir = Normalize(TargetPos - PlayerPos);
+        float Dot = Dot3(Forward, Dir);
+        float Angle = AngleDegFromDot(Dot);
+
+        float Dist = Length3(TargetPos - PlayerPos);
+
+        if (Angle > MaxFOV) continue;
+
+        // score = weighted sum: prioritize angle first, then distance
+        float Score = Angle * AngleWeight + Dist; 
+
+        if (Score < BestScore)
+        {
+            BestScore = Score;
+            BestTarget = Target;
+        }
+    }
+
+    return BestTarget;
 }

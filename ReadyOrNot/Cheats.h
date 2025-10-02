@@ -1,6 +1,7 @@
 #pragma once
 
 #include <imgui.h>
+#include <Windows.h>
 
 #include "Utils.h"
 
@@ -24,7 +25,16 @@ struct AimbotSettingsstruct {
 	float MinDistance = 50.0f;
 	bool Smooth = false;
 	float SmoothingVector = 5.0f;
+	bool DrawArrow = true;
 } inline AimbotSettings;
+
+struct SilentAimSettingsstruct {
+	float HitChance = 100.0f;
+	float MaxFOV = 15.0f;
+	float AngleWeight = 1000.0f;
+	bool TargetCivilians = false;
+	const wchar_t* TargetBone = L"Head";
+} inline SilentAimSettings;
 
 struct CVarsstruct
 {
@@ -34,6 +44,7 @@ struct CVarsstruct
 	bool ESP = false;
 	float Speed = 1;
 	bool SpeedEnabled = false;
+	bool SilentAim = false;
 } inline CVars;
 
 struct Settingsstruct
@@ -50,4 +61,5 @@ struct Cheats
 	static void UpgradeWeaponStats();
 	static void RenderESP();
 	static void SetPlayerSpeed();
+	static void SilentAim();
 };

@@ -1,3 +1,5 @@
+#include <Windows.h>
+
 #include "Cheats.h"
 #include "Utils.h"
 
@@ -103,5 +105,36 @@ void Cheats::SetPlayerSpeed()
 	if (PlayerChar)
 	{
 		PlayerChar->Server_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
+	}
+}
+
+void Cheats::SilentAim()
+{
+	if (!CVars.SilentAim) return;
+
+	if (GetAsyncKeyState(VK_LBUTTON) & 1)
+	{
+		if (!GVars.PlayerController) return;
+
+		if (!GVars.ReadyOrNotChar) return;
+		auto RONC = GVars.ReadyOrNotChar;
+
+		AReadyOrNotCharacter* TargetActor = Utils::GetBestTarget(SilentAimSettings.AngleWeight, SilentAimSettings.MaxFOV, SilentAimSettings.TargetCivilians);
+
+		FVector TargetLocation;
+		if (TargetActor)
+		{
+			TargetActor->GetActorEyesViewPoint(&TargetLocation, nullptr);
+		}
+		else
+		{
+			return;
+		}
+
+		if (RONC && RONC->GetEquippedWeapon())
+		{
+			RONC->GetEquippedWeapon()->Server_OnFire(FRotator(), TargetLocation, 0);
+			return;
+		}
 	}
 }
