@@ -9,7 +9,6 @@
 #include <d3d11.h>
 #include <dxgi.h>
 #include <chrono>
-#include <filesystem>
 #include <imgui_internal.h>
 #include <fstream>
 
@@ -58,6 +57,19 @@ static void AddDefaultTooltip(const char* Text)
 	{
 		ImGui::BeginTooltip();
 		ImGui::Text(Text);
+		ImGui::EndTooltip();
+	}
+}
+
+static void HostOnlyTooltip()
+{
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(255, 0, 0, 255), "(!)");
+
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextColored(ImVec4(255, 0, 0, 255), "Only works as host any use while not host will most likely crash your game");
 		ImGui::EndTooltip();
 	}
 }
@@ -148,7 +160,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 	GVars.AutoSetVariables();
 
-	if (Frames % 20 == 0) // Every 20 frames, ensure cheats are correctly applied
+	if (Frames % 10 == 0) // Every 10 frames, ensure cheats are correctly applied
 	{
 		if (GVars.ReadyOrNotChar && GVars.ReadyOrNotChar->GetEquippedWeapon())
 		{
@@ -197,156 +209,179 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 		ImGui::SeparatorText("Hello, Have Fun Cheating!");
 
-		if (ImGui::TreeNode("Configuration"))
+		if  (ImGui::BeginTabBar("MainTabBar"))
 		{
-			if (ImGui::TreeNode("Aimbot Settings"))
+			if (ImGui::BeginTabItem("About"))
 			{
-				ImGui::SliderFloat("Aimbot FOV", &AimbotSettings.MaxFOV, 0.01f, 180.0f);
+				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
+				ImGui::Text("Version 1.6.0");
+				ImGui::Text("Message me on Discord for support!");
 
-				ImGui::Checkbox("Should Aimbot require LOS", &AimbotSettings.LOS);
-				AddDefaultTooltip("Targets must be visible; line - of - sight required.");
+				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
+				{
+					auto PlayerState = GVars.PlayerController->PlayerState;
+					auto PlayerName = PlayerState->GetPlayerName().ToString();
+					ImGui::Text("Thank you for using my cheat %s!", PlayerName.c_str());
+				}
+				else
+				{
+					ImGui::Text("Username not found but thanks anyways!");
+				}
 
-				ImGui::Checkbox("Target Civilians", &AimbotSettings.TargetCivilians);
-
-				ImGui::Checkbox("Target Dead", &AimbotSettings.TargetDead);
-
-				ImGui::Checkbox("Target Arrested", &AimbotSettings.TargetArrested);
-
-				ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 10000);
-
-				ImGui::Checkbox("Smooting", &AimbotSettings.Smooth);
-
-				ImGui::SliderFloat("Smoothing Vector", &AimbotSettings.SmoothingVector, 1.0f, 20.0f);
-
-				ImGui::TreePop();
+				ImGui::EndTabItem();
 			}
 
-			if (ImGui::TreeNode("ESP Settings"))
+			if (ImGui::BeginTabItem("Player"))
 			{
-				ImGui::Checkbox("Show Team", &ESPSettings.ShowTeam);
+				if (ImGui::Checkbox("GodMode", &CVars.GodMode))
+				{
+					Cheats::ToggleGodMode();
+				}
+				HostOnlyTooltip();
 
-				ImGui::Checkbox("Show Box", &ESPSettings.ShowBox);
+				ImGui::Checkbox("Aimbot", &CVars.Aimbot);
 
-				ImGui::ColorEdit4("Suspect Color", (float*)&ESPSettings.SuspectColor, ImGuiColorEditFlags_NoInputs);
+				ImGui::Checkbox("ESP", &CVars.ESP);
 
-				ImGui::ColorEdit4("Civilian Color", (float*)&ESPSettings.CivilianColor, ImGuiColorEditFlags_NoInputs);
+				ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 10);
+				ImGui::SameLine();
+				ImGui::Checkbox("Enable Speed", &CVars.SpeedEnabled);
 
-				ImGui::ColorEdit4("Dead Color", (float*)&ESPSettings.DeadColor, ImGuiColorEditFlags_NoInputs);
+				ImGui::Checkbox("Silent Aim", &CVars.SilentAim);
+				AddDefaultTooltip("Not fully fleshed out so use with caution.");
+				HostOnlyTooltip();
 
-				ImGui::ColorEdit4("Team Color", (float*)&ESPSettings.TeamColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::ColorEdit4("Arrested Color", (float*)&ESPSettings.ArrestColor, ImGuiColorEditFlags_NoInputs);
-
-				ImGui::TreePop();
+				ImGui::EndTabItem();
 			}
 
-			ImGui::Checkbox("Debug", &Debug);
-			AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
-
-			ImGui::TreePop();
-		}
-
-		if (Debug)
-		{
-			if (ImGui::Button("Print Actors"))
+			if (ImGui::BeginTabItem("Weapon"))
 			{
-				Utils::PrintActors(nullptr);
-			}
-		}
-
-		if (ImGui::Checkbox("GodMode", &CVars.GodMode))
-		{
-			Cheats::ToggleGodMode();
-		}
-
-		ImGui::Checkbox("Aimbot", &CVars.Aimbot);
-
-		ImGui::Checkbox("ESP", &CVars.ESP);
-
-		if (ImGui::Checkbox("Infinite Ammo", &CVars.InfAmmo))
-		{
-			Cheats::ToggleInfAmmo();
-		}
-
-		if (ImGui::Button("Upgrade Weapon"))
-		{
-			Cheats::UpgradeWeaponStats();
-		}
-		AddDefaultTooltip("Removes recoil & spread, adds auto-fire, and boosts fire rate.");
-
-		ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 10);
-		ImGui::SameLine();
-		ImGui::Checkbox("Enable Speed", &CVars.SpeedEnabled);
-
-		if (ImGui::Button("Kill All Suspects"))
-		{
-			ULevel* Level = GVars.Level;
-			if (Level) {
-				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-				for (AActor* Actor : ActorsCopy)
+				if (ImGui::Checkbox("Infinite Ammo", &CVars.InfAmmo))
 				{
-					if (Actor->IsA(ASuspectCharacter::StaticClass()))
+					Cheats::ToggleInfAmmo();
+				}
+				HostOnlyTooltip();
+
+				if (ImGui::Button("Upgrade Weapon"))
+				{
+					Cheats::UpgradeWeaponStats();
+				}
+				AddDefaultTooltip("Removes recoil & spread, adds auto-fire, and boosts fire rate.");
+
+				if (ImGui::Button("Add Magazine"))
+				{
+					Cheats::AddMag();
+				}
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("World"))
+			{
+				if (ImGui::Button("Kill All Suspects"))
+				{
+					Cheats::KillAll(ETeam::TEAM_SUSPECT);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Kill All Civilians"))
+				{
+					Cheats::KillAll(ETeam::TEAM_CIVILIAN);
+				}
+
+				if (ImGui::Button("Arrest All Suspects"))
+				{
+					Cheats::ArrestAll(ETeam::TEAM_SUSPECT);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Arrest All Civilians"))
+				{
+					Cheats::ArrestAll(ETeam::TEAM_CIVILIAN);
+				}
+				AddDefaultTooltip("This will also automatically report them.");
+
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Misc"))
+			{
+				ImGui::Checkbox("Debug", &Debug);
+				AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
+
+				if (Debug)
+				{
+					if (ImGui::Button("Print Actors"))
 					{
-						((AReadyOrNotCharacter*)Actor)->Server_Kill();
+						Utils::PrintActors(nullptr);
 					}
 				}
+				ImGui::EndTabItem();
 			}
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Kill All Civilians"))
-		{
-			ULevel* Level = GVars.Level;
-			if (Level) {
-				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-				for (AActor* Actor : ActorsCopy)
-				{
-					if (Actor->IsA(ACivilianCharacter::StaticClass()))
-					{
-						((AReadyOrNotCharacter*)Actor)->Server_Kill();
-					}
-				}
-			}
-		}
 
-		if (ImGui::Button("Arrest All Suspects"))
-		{
-			ULevel* Level = GVars.Level;
-			if (Level) {
-				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-				for (AActor* Actor : ActorsCopy)
+			if (ImGui::BeginTabItem("Configuration"))
+			{
+				if (ImGui::TreeNode("Aimbot Settings"))
 				{
-					if (Actor->IsA(ASuspectCharacter::StaticClass()))
-					{
-						AReadyOrNotCharacter* Char = (AReadyOrNotCharacter*)Actor;
-						if (Char->IsArrested()) continue; // Can't re-arrest already arrested civilians or it will crash
-						Char->Arrest(GVars.ReadyOrNotChar);
-						Char->ArrestComplete(GVars.ReadyOrNotChar, nullptr);
-						GVars.ReadyOrNotChar->Server_ReportToTOC(Char, false, false);
-					}
-				}
-			}
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Arrest All Civilians"))
-		{
-			ULevel* Level = GVars.Level;
-			if (Level) {
-				TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-				for (AActor* Actor : ActorsCopy)
-				{
-					if (Actor->IsA(ACivilianCharacter::StaticClass()))
-					{
-						AReadyOrNotCharacter* Char = (AReadyOrNotCharacter*)Actor;
-						if (Char->IsArrested()) continue; // Can't re-arrest already arrested civilians or it will crash
-						Char->Arrest(GVars.ReadyOrNotChar);
-						Char->ArrestComplete(GVars.ReadyOrNotChar, nullptr);
-						GVars.ReadyOrNotChar->Server_ReportToTOC(Char, false, false);
-					}
-				}
-			}
-		}
+					ImGui::SliderFloat("Aimbot FOV", &AimbotSettings.MaxFOV, 0.01f, 180.0f);
 
-		ImGui::Checkbox("Silent Aim", &CVars.SilentAim);
+					ImGui::Checkbox("Should Aimbot require LOS", &AimbotSettings.LOS);
+					AddDefaultTooltip("Targets must be visible; line - of - sight required.");
+
+					ImGui::Checkbox("Target Civilians", &AimbotSettings.TargetCivilians);
+
+					ImGui::Checkbox("Target Dead", &AimbotSettings.TargetDead);
+
+					ImGui::Checkbox("Target Arrested", &AimbotSettings.TargetArrested);
+
+					ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 10000);
+
+					ImGui::Checkbox("Smoothing", &AimbotSettings.Smooth);
+
+					ImGui::SliderFloat("Smoothing Vector", &AimbotSettings.SmoothingVector, 1.0f, 20.0f);
+
+					ImGui::Checkbox("Draw Arrow", &AimbotSettings.DrawArrow);
+
+					ImGui::Checkbox("Draw FOV", &AimbotSettings.DrawFOV);
+
+					ImGui::TreePop();
+				}
+
+				if (ImGui::TreeNode("ESP Settings"))
+				{
+					ImGui::Checkbox("Show Team", &ESPSettings.ShowTeam);
+
+					ImGui::Checkbox("Show Box", &ESPSettings.ShowBox);
+
+					ImGui::ColorEdit4("Suspect Color", (float*)&ESPSettings.SuspectColor, ImGuiColorEditFlags_NoInputs);
+
+					ImGui::ColorEdit4("Civilian Color", (float*)&ESPSettings.CivilianColor, ImGuiColorEditFlags_NoInputs);
+
+					ImGui::ColorEdit4("Dead Color", (float*)&ESPSettings.DeadColor, ImGuiColorEditFlags_NoInputs);
+
+					ImGui::ColorEdit4("Team Color", (float*)&ESPSettings.TeamColor, ImGuiColorEditFlags_NoInputs);
+
+					ImGui::ColorEdit4("Arrested Color", (float*)&ESPSettings.ArrestColor, ImGuiColorEditFlags_NoInputs);
+
+					ImGui::TreePop();
+				}
+
+				if (ImGui::TreeNode("Misc"))
+				{
+					ImGui::Checkbox("Reticle", &CVars.Reticle);
+
+					ImGui::ColorEdit4("Reticle Color", (float*)&MiscSettings.ReticleColor);
+
+					ImGui::DragFloat2("Reticle Position", (float*)&MiscSettings.ReticlePosition, 1, -100, 100);
+
+					ImGui::SliderFloat("Reticle Size", &MiscSettings.ReticleSize, 1, 15);
+
+					ImGui::TreePop();
+				}
+
+
+				ImGui::EndTabItem();
+			}
+
+			ImGui::EndTabBar();
+		}
 
 		ImGui::End();
 	}
@@ -356,6 +391,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 	if (CVars.SilentAim)
 		Cheats::SilentAim();
+
+	if (CVars.Reticle)
+		Cheats::DrawReticle();
 
 	if (CVars.Aimbot)
 		Cheats::Aimbot();
@@ -408,6 +446,8 @@ DWORD MainThread(HMODULE hModule)
 	FILE* Dummy;
 	freopen_s(&Dummy, "CONOUT$", "w", stdout);
 	freopen_s(&Dummy, "CONIN$", "r", stdin);
+
+	 ////
 
 	std::cout << "Cheat Injecting...\n";
 

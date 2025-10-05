@@ -25,7 +25,8 @@ struct AimbotSettingsstruct {
 	float MinDistance = 50.0f;
 	bool Smooth = false;
 	float SmoothingVector = 5.0f;
-	bool DrawArrow = true;
+	bool DrawArrow = false;
+	bool DrawFOV = false;
 } inline AimbotSettings;
 
 struct SilentAimSettingsstruct {
@@ -33,8 +34,14 @@ struct SilentAimSettingsstruct {
 	float MaxFOV = 15.0f;
 	float AngleWeight = 1000.0f;
 	bool TargetCivilians = false;
-	const wchar_t* TargetBone = L"Head";
 } inline SilentAimSettings;
+
+struct MiscSettingsStruct {
+	bool Reticle = false;
+	ImVec4 ReticleColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+	float ReticleSize = 5.0f;
+	ImVec2 ReticlePosition = ImVec2(0.0f, 0.0f);
+} inline MiscSettings;
 
 struct CVarsstruct
 {
@@ -45,6 +52,9 @@ struct CVarsstruct
 	float Speed = 1;
 	bool SpeedEnabled = false;
 	bool SilentAim = false;
+	bool AlwaysAllowGuns = false;
+	bool NoClip = false;
+	bool Reticle = false;
 } inline CVars;
 
 struct Settingsstruct
@@ -62,4 +72,10 @@ struct Cheats
 	static void RenderESP();
 	static void SetPlayerSpeed();
 	static void SilentAim();
+	static void AddMag();
+	static void Revive();
+	static void ArrestAll(ETeam Team); // Arrest all of a specific team
+	static void KillAll(ETeam Team);   // Kill all of a specific team
+	static void ToggleNoClip();
+	static void DrawReticle();
 };

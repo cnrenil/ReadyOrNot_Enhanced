@@ -139,7 +139,7 @@ void Cheats::RenderESP()
 			TargetActor = (AReadyOrNotCharacter*)Actor;
 			IsSwat = false;
         }
-		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass())) 
+		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass()) || Actor->IsA(APlayerCharacter::StaticClass())) 
 		{
 			TargetActor = (AReadyOrNotCharacter*)Actor;
             IsSuspect = false;

@@ -76,7 +76,6 @@ void Cheats::UpgradeWeaponStats()
 	Character->CameraBobTrans = FVector();
 	Character->MeshspaceRecoilMovementMultiplier = FVector();
 	Character->RecoilSpeed = 0.0f;
-	Character->bFireLoop = false;
 
 	// Spread removal
 	Gun->SpreadPattern = FRotator();
@@ -137,4 +136,97 @@ void Cheats::SilentAim()
 			return;
 		}
 	}
+}
+
+void Cheats::AddMag()
+{
+	if (!GVars.ReadyOrNotChar) return;
+	auto* Gun = GVars.ReadyOrNotChar->GetEquippedWeapon();
+	if (!Gun) return;
+	FMagazine NewMag;
+	NewMag.Ammo = 30;
+	NewMag.AmmoType = 1;
+	Gun->Server_AddMagazine(NewMag);
+}
+
+void Cheats::Revive()
+{
+	if (!GVars.ReadyOrNotChar) return;
+	((APlayerCharacter*)GVars.ReadyOrNotChar)->bForceLowReady = CVars.AlwaysAllowGuns;
+	((APlayerCharacter*)GVars.ReadyOrNotChar)->SetForceLowReady(CVars.AlwaysAllowGuns);
+}
+
+void Cheats::ArrestAll(ETeam Team)
+{
+	if (!GVars.ReadyOrNotChar) return;
+	ULevel* Level = GVars.Level;
+	if (Level) {
+		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (ActorsCopy)
+		{
+			for (AActor* Actor : ActorsCopy)
+			{
+				if (!Actor) continue;
+
+				if (Team == ETeam::TEAM_CIVILIAN && Actor->IsA(ACivilianCharacter::StaticClass()) || Team == ETeam::TEAM_SUSPECT && Actor->IsA(ASuspectCharacter::StaticClass()) || Team == ETeam::TEAM_SWAT && Actor->IsA(ASWATCharacter::StaticClass()))
+				{
+					AReadyOrNotCharacter* Char = (AReadyOrNotCharacter*)Actor;
+					if (Char->IsArrested()) continue; // Can't re-arrest already arrested civilians or it will crash
+					Char->Arrest(GVars.ReadyOrNotChar);
+					Char->ArrestComplete(GVars.ReadyOrNotChar, nullptr);
+					GVars.ReadyOrNotChar->Server_ReportToTOC(Char, false, false);
+				}
+			}
+		}
+	}
+}
+
+void Cheats::KillAll(ETeam Team)
+{
+	if (!GVars.ReadyOrNotChar) return;
+	ULevel* Level = GVars.Level;
+	if (Level) {
+		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (ActorsCopy)
+		{
+			for (AActor* Actor : ActorsCopy)
+			{
+				if (!Actor) continue;
+				if (Team == ETeam::TEAM_SUSPECT && Actor->IsA(ASuspectCharacter::StaticClass()) || Team == ETeam::TEAM_CIVILIAN && Actor->IsA(ACivilianCharacter::StaticClass()) || Team == ETeam::TEAM_SWAT && Actor->IsA(ASWATCharacter::StaticClass()))
+				{
+					((AReadyOrNotCharacter*)Actor)->Server_Kill();
+					GVars.ReadyOrNotChar->Server_ReportToTOC(Actor, false, false);
+				}
+			}
+		}
+	}
+}
+
+void Cheats::ToggleNoClip()
+{
+	if (!GVars.PlayerController) return;
+	if (!GVars.ReadyOrNotChar) return;
+	auto RONC = GVars.ReadyOrNotChar;
+	auto Character = (APlayerCharacter*)RONC;
+	if (CVars.NoClip)
+	{
+		Character->CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Character->CharacterMovement->SetMovementMode(EMovementMode::MOVE_Flying, 0);
+	}
+	else
+	{
+		Character->CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Character->CharacterMovement->SetMovementMode(EMovementMode::MOVE_Walking, 0);
+	}
+}
+
+void Cheats::DrawReticle()
+{
+	if (!CVars.Reticle) return;
+	ImVec2 ScreenSize = ImGui::GetIO().DisplaySize;
+	ImVec2 WindowPos = ImGui::GetWindowPos();
+	ImGui::GetBackgroundDrawList()->AddCircleFilled(
+		ImVec2(ScreenSize.x / 2 + MiscSettings.ReticlePosition.x, ScreenSize.y / 2 + MiscSettings.ReticlePosition.y),
+		MiscSettings.ReticleSize, 
+		Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
 }

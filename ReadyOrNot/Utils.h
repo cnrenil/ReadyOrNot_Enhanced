@@ -1,10 +1,22 @@
 #pragma once
-#include "Cheats.h"
 #include "SDK/Engine_classes.hpp"
 #include "SDK/ReadyOrNot_classes.hpp"
 #include "ImGui/imgui.h"
 
 using namespace SDK;
+
+enum class ETeam
+{
+	TEAM_CIVILIAN = 0,
+	TEAM_SUSPECT,
+	TEAM_SWAT,
+	TEAM_MAX
+};
+
+struct BoneList
+{
+	int Current = 0;              // index into BoneNames (0..Count-1)
+} inline boneList;
 
 struct Utils
 {

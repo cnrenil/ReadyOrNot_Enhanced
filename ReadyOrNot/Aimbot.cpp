@@ -17,7 +17,7 @@ void Cheats::Aimbot()
     FRotator CurrentRot = GVars.PlayerController->GetControlRotation();
     FVector PlayerPos;
     GVars.PlayerController->GetPlayerViewPoint(&PlayerPos, nullptr);
-    
+
 	FVector Forward = ForwardFromRot(CurrentRot);
 
     AActor* BestTarget = nullptr;
@@ -36,9 +36,24 @@ void Cheats::Aimbot()
         else 
             continue;
 
-		if (!AimbotSettings.TargetDead && TargetActor->IsDeadOrUnconscious()) continue;
-		if (!AimbotSettings.TargetArrested && TargetActor->IsArrestedOrSurrendered()) continue;
-        if (AimbotSettings.LOS && !PC->LineOfSightTo(TargetActor, PlayerPos, false)) continue;
+		if (!AimbotSettings.TargetDead && TargetActor->IsDeadOrUnconscious() || !AimbotSettings.TargetDead && TargetActor->IsIncapacitated())
+		{
+			if (TargetActor == BestTarget)
+				BestTarget = nullptr;
+			continue;
+		} 
+		if (!AimbotSettings.TargetArrested && TargetActor->IsArrestedOrSurrendered()) 
+        {
+            if (TargetActor == BestTarget)
+                BestTarget = nullptr;
+            continue;
+        }
+        if (AimbotSettings.LOS && !PC->LineOfSightTo(TargetActor, PlayerPos, false)) 
+        {
+            if (TargetActor == BestTarget)
+                BestTarget = nullptr;
+            continue;
+        }
 
         if (!TargetActor || TargetActor == GVars.Character) continue;
         
@@ -55,6 +70,9 @@ void Cheats::Aimbot()
         float Dist = Length3(Delta);
         if (Dist < AimbotSettings.MinDistance) continue;
         if (Dist <= 0.0001f) continue;
+
+		// We are aiming from the right eye so we need to offset the position a bit based on distance
+        PlayerPos += (GVars.Character->GetActorRightVector() * (Dist / 1000));
 
         FVector Dir = Normalize(Delta);
         float Dot = Dot3(Forward, Dir);
@@ -73,8 +91,9 @@ void Cheats::Aimbot()
     if (!BestTarget) return;
 
     // Compute desired aim rotation
-    FVector AimPos;/* = ((AReadyOrNotCharacter*)BestTarget)->Mesh->GetBoneTransform(BasicFilesImpleUtils::StringToName(L"Head"), ERelativeTransformSpace::RTS_World).Translation;*/
-	BestTarget->GetActorEyesViewPoint(&AimPos, nullptr);
+    FVector AimPos = ((AReadyOrNotCharacter*)BestTarget)->Mesh->GetBoneTransform(BasicFilesImpleUtils::StringToName(L"Head"), ERelativeTransformSpace::RTS_World).Translation;
+
+    AimPos = AimPos + (BestTarget->GetVelocity() * 0.04f); // Simple prediction
 
     FVector D = FVector{ AimPos.X - PlayerPos.X,
                          AimPos.Y - PlayerPos.Y,
@@ -113,11 +132,13 @@ void Cheats::Aimbot()
     if (AimbotSettings.DrawArrow && PC->ProjectWorldLocationToScreen(AimPos, &ScreenPos, true))
     {
         ImGui::GetBackgroundDrawList()->AddLine(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), ImVec2(ScreenPos.X, ScreenPos.Y), IM_COL32(255, 255, 255, 255), 2);
-		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), 5, IM_COL32(255, 0, 0, 255), 0);
+		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), 3, IM_COL32(255, 0, 0, 255), 0);
 	}
 
-    PC->ProjectWorldLocationToScreen(AimPos, &ScreenPos, true);
-    ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(ScreenPos.X, ScreenPos.Y), 5, IM_COL32(0, 255, 0, 255), 0, 2);
+	if (AimbotSettings.DrawFOV)
+	{
+        ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), AimbotSettings.MaxFOV, IM_COL32(255, 0, 0, 255));
+	}
 
     PC->SetControlRotation(FinalRot);
 }
