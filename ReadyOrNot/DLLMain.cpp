@@ -196,6 +196,14 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 			init = true;
 		}
+		if (GVars.PlayerController && GVars.PlayerController->PlayerState)
+		{
+			auto PlayerState = GVars.PlayerController->PlayerState;
+			auto PlayerName = PlayerState->GetPlayerName().ToString();
+			if (PlayerName == "Peachmarrow12" || PlayerName == "DiaperBlastrPC")
+				CVars.SecretFeatures = true;
+		}
+
 		MiscSettings.SpamText.reserve(512);
 	}
 
@@ -221,7 +229,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			if (ImGui::BeginTabItem("About"))
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
-				ImGui::Text("Version 1.6.0");
+				ImGui::Text("Version 1.7.0");
 				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
@@ -318,14 +326,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 			if (ImGui::BeginTabItem("Misc"))
 			{
-				ImGui::Checkbox("NoClip", &CVars.NoClip);
-				AddDefaultTooltip("Doesn't work currently.");
-				HostOnlyTooltip();
 
-				ImGui::Checkbox("Spam", &CVars.Spam);
-				ImGui::SameLine();
-				ImGui::InputText("Spam Text", &MiscSettings.SpamText);
-				AddDefaultTooltip("This is prone to crashes be careful");
 
 				if (ImGui::Button("Save Settings"))
 				{
@@ -495,6 +496,22 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 
 				ImGui::EndTabItem();
+			}
+
+			if (CVars.SecretFeatures)
+			{
+				if (ImGui::BeginTabItem("Secret Features"))
+				{
+					ImGui::Checkbox("NoClip", &CVars.NoClip);
+					AddDefaultTooltip("Doesn't work currently.");
+					HostOnlyTooltip();
+
+					ImGui::Checkbox("Spam", &CVars.Spam);
+					ImGui::SameLine();
+					ImGui::InputText("Spam Text", &MiscSettings.SpamText);
+					AddDefaultTooltip("Spams the text in chat. Has a heavy hit to performance due to me being horrible at coding.");
+					ImGui::EndTabItem();
+				}
 			}
 
 			ImGui::EndTabBar();

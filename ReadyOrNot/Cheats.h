@@ -37,6 +37,7 @@ struct SilentAimSettingsstruct {
 
 struct CVarsstruct
 {
+	bool SecretFeatures = false;
 	bool GodMode = false;
 	bool InfAmmo = false;
 	bool Aimbot = false;
