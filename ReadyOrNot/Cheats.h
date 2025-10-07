@@ -87,4 +87,5 @@ struct Cheats
 	static void GetAllEvidence();
 	static void TriggerBot();
 	static void RenderEnabledOptions();
+	static void Lean();
 };

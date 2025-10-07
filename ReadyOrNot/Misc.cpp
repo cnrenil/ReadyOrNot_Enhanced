@@ -415,3 +415,11 @@ void Cheats::RenderEnabledOptions()
 		ImGui::TextColored(Color, "Trigger Bot");
 	ImGui::End();
 }
+
+void Cheats::Lean()
+{
+	if (!GVars.ReadyOrNotChar || !GVars.PlayerController) return;
+
+	GVars.ReadyOrNotChar->QuickLeanAmount = 100000.0f;
+	GVars.ReadyOrNotChar->QuickLeanIntensity = 1000000.0f;
+}
