@@ -16,12 +16,15 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 ---
 ## Features
 - Open/close the menu with the insert key
-- Aimbot
-- ESP
+- Aimbot - FOV, Line of Sight, Prediction, and snap line.
+- ESP - Skeleton, Custom colors, and boxes.
 - Godmode
+- Reticle
 - Infinite ammo
+- Silent Aim
 - Arrest all civs or suspects
 - Kill all civs or suspects
+- NoClip
 ---
 ## Known issues:
 - Changing resolutions while the cheat is injected will crash your game
