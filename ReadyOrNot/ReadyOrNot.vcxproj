@@ -119,7 +119,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>C:\Users\Kayle\source\repos\ReadyOrNot\ReadyOrNot\ImGui</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -138,6 +138,7 @@
     <ClCompile Include="ImGui\imgui_draw.cpp" />
     <ClCompile Include="ImGui\imgui_tables.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="ImGui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="Misc.cpp" />
     <ClCompile Include="SDK\Basic.cpp" />
     <ClCompile Include="SDK\CoreUObject_functions.cpp" />

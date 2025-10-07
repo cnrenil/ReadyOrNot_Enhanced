@@ -122,7 +122,7 @@ auto RenderColor = IM_COL32(255, 255, 255, 255);
 void Cheats::RenderESP()
 {
 	if (!CVars.ESP) return;
-    if (!GVars.PlayerController || !GVars.Character) return;
+    if (!GVars.PlayerController) return;
 
     ULevel* Level = GVars.Level;
     if (!Level) return; 
@@ -157,7 +157,7 @@ void Cheats::RenderESP()
     	else
 			continue;
 
-        if (!TargetActor || TargetActor == GVars.Character) continue;
+        if (!TargetActor) continue;
 
         if (!IsSwat && TargetActor->IsSuspect())
             IsSuspect = true;

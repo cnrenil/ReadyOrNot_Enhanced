@@ -1,9 +1,8 @@
 #pragma once
 
 #include <imgui.h>
-#include <Windows.h>
-
 #include "Utils.h"
+#include <string>
 
 struct EspSettingsstruct {
 	bool ShowTeam = true;
@@ -36,16 +35,6 @@ struct SilentAimSettingsstruct {
 	bool TargetCivilians = false;
 } inline SilentAimSettings;
 
-struct MiscSettingsStruct {
-	bool Reticle = false;
-	ImVec4 ReticleColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-	float ReticleSize = 5.0f;
-	ImVec2 ReticlePosition = ImVec2(0.0f, 0.0f);
-	bool ReticleWhenThrowing = false;
-	bool TriggerBotTargetsCivilians = false;
-	bool TriggerBotUsesSilentAim = false;
-} inline MiscSettings;
-
 struct CVarsstruct
 {
 	bool GodMode = false;
@@ -57,10 +46,21 @@ struct CVarsstruct
 	bool SilentAim = false;
 	bool NoClip = false;
 	bool Reticle = false;
-	bool Troll = false;
+	bool Spam = false;
 	bool TriggerBot = false;
 	bool RenderOptions = false;
 } inline CVars;
+
+struct MiscSettingsStruct {
+	bool Reticle = false;
+	ImVec4 ReticleColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
+	float ReticleSize = 5.0f;
+	ImVec2 ReticlePosition = ImVec2(0.0f, 0.0f);
+	bool ReticleWhenThrowing = false;
+	bool TriggerBotTargetsCivilians = false;
+	bool TriggerBotUsesSilentAim = false;
+	std::string SpamText = "I am Peachmarrow13 check me out on UnknownCheats.me!";
+} inline MiscSettings;
 
 struct Settingsstruct
 {
@@ -82,7 +82,7 @@ struct Cheats
 	static void KillAll(ETeam Team);   // Kill all of a specific team
 	static void UpdateNoClip();
 	static void DrawReticle();
-	static void Troll();
+	static void Spam();
 	static void GetAllEvidence();
 	static void TriggerBot();
 	static void RenderEnabledOptions();

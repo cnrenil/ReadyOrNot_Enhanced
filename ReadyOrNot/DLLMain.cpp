@@ -1,10 +1,10 @@
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 #include "backends/imgui_impl_win32.h"
 #include "backends/imgui_impl_dx11.h"
 
 #include <cstdio>
 #include <iostream>
-#include <thread>
 #include <Windows.h>
 #include <d3d11.h>
 #include <dxgi.h>
@@ -14,7 +14,6 @@
 
 #include "Cheats.h"
 #include "Utils.h"
-
 #include "SDK/ReadyOrNot_classes.hpp"
 #include "SDK/Engine_classes.hpp"
 
@@ -197,6 +196,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 			init = true;
 		}
+		MiscSettings.SpamText.reserve(512);
 	}
 
 	if (!oPresent)
@@ -322,7 +322,10 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				AddDefaultTooltip("Doesn't work currently.");
 				HostOnlyTooltip();
 
-				ImGui::Checkbox("Troll", &CVars.Troll);
+				ImGui::Checkbox("Spam", &CVars.Spam);
+				ImGui::SameLine();
+				ImGui::InputText("Spam Text", &MiscSettings.SpamText);
+				AddDefaultTooltip("This is prone to crashes be careful");
 
 				if (ImGui::Button("Save Settings"))
 				{
@@ -524,8 +527,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	if (CVars.SpeedEnabled)
 		Cheats::SetPlayerSpeed();
 
-	if (CVars.Troll)
-		Cheats::Troll();
+	if (CVars.Spam)
+		Cheats::Spam();
 
 	if (pRenderTargetView) {
 		pContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr);
@@ -736,6 +739,7 @@ void SaveSettings()
 	file << MiscSettings.ReticlePosition.x << '\n' << MiscSettings.ReticlePosition.y << '\n';
 	file << MiscSettings.ReticleSize << '\n';
 	file << CVars.RenderOptions << '\n';
+	file << MiscSettings.SpamText << '\n';
 
 	file.close();
 }
@@ -773,6 +777,9 @@ void LoadSettings()
 	infile >> MiscSettings.ReticlePosition.x >> MiscSettings.ReticlePosition.y;
 	infile >> MiscSettings.ReticleSize;
 	infile >> CVars.RenderOptions;
+
+	// read the rest of the line (skip leftover newline/whitespace) into the string
+	std::getline(infile >> std::ws, MiscSettings.SpamText);
 
 	infile.close();
 }

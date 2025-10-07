@@ -8,6 +8,9 @@
 
 using namespace SDK;
 
+FRChatMessage Msg;
+TArray<AActor*> ActorsCopy;
+
 void Cheats::ToggleGodMode() {
 	if (!GVars.PlayerController) return;
 	if (!GVars.ReadyOrNotChar) return;
@@ -167,7 +170,8 @@ void Cheats::ArrestAll(ETeam Team)
 	if (!GVars.ReadyOrNotChar) return;
 	ULevel* Level = GVars.Level;
 	if (Level) {
-		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (!ActorsCopy || ActorsCopy.Num() == 0) return;
 		if (ActorsCopy)
 		{
 			for (AActor* Actor : ActorsCopy)
@@ -192,7 +196,8 @@ void Cheats::KillAll(ETeam Team)
 	if (!GVars.ReadyOrNotChar) return;
 	ULevel* Level = GVars.Level;
 	if (Level) {
-		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (!ActorsCopy || ActorsCopy.Num() == 0) return;
 		if (ActorsCopy)
 		{
 			for (AActor* Actor : ActorsCopy)
@@ -252,68 +257,77 @@ void Cheats::DrawReticle()
 		Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
 }
 
-void Cheats::Troll()
+void Cheats::Spam()
 {
+	if (!CVars.Spam) return;
 	if (!GVars.ReadyOrNotChar || !GVars.ReadyOrNotChar->GetEquippedWeapon() || !GVars.ReadyOrNotChar->PlayerState) return;
-	//GVars.ReadyOrNotChar->Server_Yell();
-	SDK::FRChatMessage* Msg = new SDK::FRChatMessage();
-	Msg->Message = L"Sigma";
-	Msg->SenderName = L"The Alpha";
-	Msg->Color = FLinearColor();
-	Msg->bCommand = false;
-	Msg->AssociatedTeam = ETeamType::TT_SQUAD;
-	Msg->TargetPlayerController = GVars.PlayerController;
-	Msg->TargetTeam = ETeamType::TT_SQUAD;
-	Msg->UniqueNetIdStr = L"";
-	Msg->Timestamp = FDateTime();
-	Msg->bKillfeed = false;
-	Msg->SenderPlayerState = (AReadyOrNotPlayerState*)GVars.ReadyOrNotChar->PlayerState;
-	
-	if (GVars.PlayerController->HasAuthority())
-	{
-		// we need to send it to every player individually
-		ULevel* Level = GVars.Level;
-		if (!Level) return;
-		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-		if (!ActorsCopy) return;
-		for (AActor* Actor : ActorsCopy)
+
+	// Validate the spam text before processing
+	if (MiscSettings.SpamText.empty() || MiscSettings.SpamText.length() > 255) return;
+
+	// Use stack allocation instead of heap allocation
+	wchar_t ResultText[256] = { 0 };
+	MultiByteToWideChar(CP_UTF8, 0, MiscSettings.SpamText.c_str(), -1, ResultText, 256);
+
+	Msg.Message = ResultText;
+	Msg.SenderName = L"The Alpha";
+	Msg.bCommand = false;
+	Msg.AssociatedTeam = ETeamType::TT_SQUAD;
+	Msg.TargetPlayerController = GVars.PlayerController;
+	Msg.TargetTeam = ETeamType::TT_SQUAD;
+	Msg.UniqueNetIdStr = L"";
+	Msg.bKillfeed = false;
+	Msg.SenderPlayerState = (AReadyOrNotPlayerState*)GVars.ReadyOrNotChar->PlayerState;
+
+	__try {
+		if (GVars.PlayerController->HasAuthority())
 		{
-			if (!Actor) continue;
-			if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
-			((AReadyOrNotPlayerController*)GVars.PlayerController)->Server_SendChatMessage(*Msg);
+			// we need to send it to every player individually
+			if (!GVars.Level) return;
+			ActorsCopy = GVars.Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+			if (!ActorsCopy || ActorsCopy.Num() == 0) return;
+			for (AActor* Actor : ActorsCopy)
+			{
+				if (!Actor) continue;
+				if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
+				((AReadyOrNotPlayerController*)GVars.PlayerController)->Server_SendChatMessage(Msg);
+			}
+
 		}
-		
-	}
-	else
-	{
-		// we need to send it to every player individually
-		ULevel* Level = GVars.Level;
-		if (!Level) return;
-		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-		if (!ActorsCopy) return;
-		for (AActor* Actor : ActorsCopy)
+		else
 		{
-			if (!Actor) continue;
-			if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
-			((AReadyOrNotPlayerController*)GVars.PlayerController)->SendChatMessage(*Msg);
+			// we need to send it to every player individually
+			if (!GVars.Level) return;
+			ActorsCopy = GVars.Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+			if (!ActorsCopy || ActorsCopy.Num() == 0) return;
+			for (AActor* Actor : ActorsCopy)
+			{
+				if (!Actor) continue;
+				if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
+				((AReadyOrNotPlayerController*)GVars.PlayerController)->SendChatMessage(Msg);
+			}
 		}
 	}
-	delete Msg;
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		// Log the exception but don't crash
+		std::cout << "[ERROR] Exception in Troll function, skipping...\n";
+		return;
+	}
 }
 
 void Cheats::GetAllEvidence()
 {
 	if (!GVars.ReadyOrNotChar || !GVars.Level) return;
-	auto RONC = (APlayerCharacter*)GVars.ReadyOrNotChar;
 
-	TArray<AActor*> Actors = GVars.Level->Actors;
+	ActorsCopy = GVars.Level->Actors;
+	if (!ActorsCopy || ActorsCopy.Num() == 0) return;
 
-	for (AActor* Actor : Actors)
+	for (AActor* Actor : ActorsCopy)
 	{
 		if (!Actor) continue;
-		if (Actor->IsA(ABaseWeapon::StaticClass()))
+		if (Actor->IsA(ABaseWeapon::StaticClass()) && ((ABaseWeapon*)Actor)->EvidenceComponent->CanBeCollected())
 		{
-			RONC->PickupEvidence(Actor);
+			GVars.ReadyOrNotChar->PickupEvidence(Actor);
 		}
 	}
 	
@@ -395,7 +409,7 @@ void Cheats::RenderEnabledOptions()
 		ImGui::TextColored(Color, "No Clip");
 	if (CVars.Reticle)
 		ImGui::TextColored(Color, "Reticle");
-	if (CVars.Troll)
+	if (CVars.Spam)
 		ImGui::TextColored(Color, "Troll");
 	if (CVars.TriggerBot)
 		ImGui::TextColored(Color, "Trigger Bot");

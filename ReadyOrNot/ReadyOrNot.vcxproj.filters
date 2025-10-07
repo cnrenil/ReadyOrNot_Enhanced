@@ -75,6 +75,9 @@
     <ClCompile Include="ESP.cpp">
       <Filter>Source Files\Cheats</Filter>
     </ClCompile>
+    <ClCompile Include="ImGui\misc\cpp\imgui_stdlib.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SDK\Engine_classes.hpp">
