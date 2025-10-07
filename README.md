@@ -9,10 +9,10 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 ### Injection:
 1. Open the game
 2. Wait for the menu screen
-3. Inject
+3. Inject into ReadyOrNotSteam-Win64-Shipping.exe
 4. Press insert to open or close the menu
 
-> Also, don't enable/disable cheats while loading, as it will most likely crash your game.
+> Also, don't grief, please.
 ---
 ## Features
 - Open/close the menu with the insert key
@@ -24,7 +24,12 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 - Silent Aim
 - Arrest all civs or suspects
 - Kill all civs or suspects
-- NoClip
+- NoClip - Currently not working.
+- TriggerBot.
+- Secure All Evidence.
+- Saving and loading of settings.
+- Customizable hotkeys
+- Spamming - Currently dev only to prevent griefing.
 ---
 ## Known issues:
 - Changing resolutions while the cheat is injected will crash your game
