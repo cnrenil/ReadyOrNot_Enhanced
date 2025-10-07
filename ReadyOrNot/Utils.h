@@ -26,6 +26,7 @@ struct Utils
 	static void PrintActors(const char* Exclude);
 	static FRotator VectorToRotation(const FVector& Vec);
 	static AReadyOrNotCharacter* GetBestTarget(float AngleWeight, float MaxFOV, bool TargetCivilians);
+	static FVector FRotatorToVector(const FRotator& Rot);
 };
 
 struct Variables

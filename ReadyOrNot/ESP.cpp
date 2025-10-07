@@ -132,6 +132,15 @@ void Cheats::RenderESP()
     {
     	if (!Actor) continue;
 
+        FVector2D TrapScreen;
+
+        if (Actor->IsA(ATrapActor::StaticClass()) && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &TrapScreen, true))
+        {
+            ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(TrapScreen.X, TrapScreen.Y), 3, IM_COL32(255, 0, 0, 255));
+			ImGui::GetBackgroundDrawList()->AddText(ImVec2(TrapScreen.X + 5, TrapScreen.Y - 5), IM_COL32(255, 0, 0, 255), "Trap");
+        	continue;
+        }
+
         AReadyOrNotCharacter* TargetActor = nullptr;
 
         if (Actor->IsA(ASuspectCharacter::StaticClass()) || Actor->IsA(ACivilianCharacter::StaticClass()))

@@ -11,24 +11,30 @@ using namespace SDK;
 void Cheats::ToggleGodMode() {
 	if (!GVars.PlayerController) return;
 	if (!GVars.ReadyOrNotChar) return;
-	auto RONC = GVars.ReadyOrNotChar;
-	RONC->bGodMode = CVars.GodMode;
+	auto RONC = (APlayerCharacter*)GVars.ReadyOrNotChar;
+	if (RONC->bGodMode != CVars.GodMode)
+	{
+		if (GVars.PlayerController->HasAuthority())
+		{
+			RONC->Server_ToggleGodMode();
+		}
+		else
+			RONC->ToggleGodMode();
+	}
 }
 
 void Cheats::ToggleInfAmmo() {
-	if (!GVars.PlayerController) return;
-	if (!GVars.ReadyOrNotChar) return;
-	auto RONC = GVars.ReadyOrNotChar;
-	auto Character = (APlayerCharacter*)RONC;
-	Character->GetEquippedWeapon()->bInfiniteAmmo = CVars.InfAmmo;
+	if (!GVars.ReadyOrNotChar || !GVars.ReadyOrNotChar->GetEquippedWeapon()) return;
+	ABaseMagazineWeapon* Gun = GVars.ReadyOrNotChar->GetEquippedWeapon();
+	Gun->bInfiniteAmmo = CVars.InfAmmo;
+
 }
 
 void Cheats::UpgradeWeaponStats()
 {
 	if (!GVars.PlayerController) return;
 	if (!GVars.ReadyOrNotChar) return;
-	auto* RONC = GVars.ReadyOrNotChar;
-	auto* Character = (APlayerCharacter*)RONC;
+	auto* Character = (APlayerCharacter*)GVars.ReadyOrNotChar;
 	auto* Gun = Character->GetEquippedWeapon();
 
 	// Recoil removal
@@ -103,7 +109,10 @@ void Cheats::SetPlayerSpeed()
 
 	if (PlayerChar)
 	{
-		PlayerChar->Server_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
+		if (GVars.PlayerController->HasAuthority())
+			PlayerChar->Server_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
+		else
+			PlayerChar->Client_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
 	}
 }
 
@@ -132,7 +141,10 @@ void Cheats::SilentAim()
 
 		if (RONC && RONC->GetEquippedWeapon())
 		{
-			RONC->GetEquippedWeapon()->Server_OnFire(FRotator(), TargetLocation, 0);
+			if (GVars.PlayerController->HasAuthority())
+				RONC->GetEquippedWeapon()->Server_OnFire(FRotator(), TargetLocation, 0);
+			else
+				RONC->GetEquippedWeapon()->OnFire(FRotator(), TargetLocation);
 			return;
 		}
 	}
@@ -140,20 +152,14 @@ void Cheats::SilentAim()
 
 void Cheats::AddMag()
 {
-	if (!GVars.ReadyOrNotChar) return;
+	if (!GVars.ReadyOrNotChar || !GVars.PlayerController) return;
 	auto* Gun = GVars.ReadyOrNotChar->GetEquippedWeapon();
 	if (!Gun) return;
+	if (!GVars.PlayerController->HasAuthority()) return; // Server_AddMagazine is server-only
 	FMagazine NewMag;
 	NewMag.Ammo = 30;
 	NewMag.AmmoType = 1;
 	Gun->Server_AddMagazine(NewMag);
-}
-
-void Cheats::Revive()
-{
-	if (!GVars.ReadyOrNotChar) return;
-	((APlayerCharacter*)GVars.ReadyOrNotChar)->bForceLowReady = CVars.AlwaysAllowGuns;
-	((APlayerCharacter*)GVars.ReadyOrNotChar)->SetForceLowReady(CVars.AlwaysAllowGuns);
 }
 
 void Cheats::ArrestAll(ETeam Team)
@@ -194,15 +200,24 @@ void Cheats::KillAll(ETeam Team)
 				if (!Actor) continue;
 				if (Team == ETeam::TEAM_SUSPECT && Actor->IsA(ASuspectCharacter::StaticClass()) || Team == ETeam::TEAM_CIVILIAN && Actor->IsA(ACivilianCharacter::StaticClass()) || Team == ETeam::TEAM_SWAT && Actor->IsA(ASWATCharacter::StaticClass()))
 				{
-					((AReadyOrNotCharacter*)Actor)->Server_Kill();
-					GVars.ReadyOrNotChar->Server_ReportToTOC(Actor, false, false);
+					if (GVars.PlayerController->HasAuthority())
+					{
+						((AReadyOrNotCharacter*)Actor)->Server_Kill();
+						GVars.ReadyOrNotChar->Server_ReportToTOC(Actor, false, false);
+					}
+					else
+					{
+						((AReadyOrNotCharacter*)Actor)->Kill();
+						GVars.ReadyOrNotChar->Server_ReportToTOC(Actor, false, false);
+					}
+					
 				}
 			}
 		}
 	}
 }
 
-void Cheats::ToggleNoClip()
+void Cheats::UpdateNoClip()
 {
 	if (!GVars.PlayerController) return;
 	if (!GVars.ReadyOrNotChar) return;
@@ -210,23 +225,179 @@ void Cheats::ToggleNoClip()
 	auto Character = (APlayerCharacter*)RONC;
 	if (CVars.NoClip)
 	{
-		Character->CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Character->CharacterMovement->SetMovementMode(EMovementMode::MOVE_Flying, 0);
+		Character->ClientCheatFly();
+		Character->ClientCheatGhost();
 	}
 	else
 	{
 		Character->CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Character->CharacterMovement->SetMovementMode(EMovementMode::MOVE_Walking, 0);
+		
 	}
 }
 
 void Cheats::DrawReticle()
 {
 	if (!CVars.Reticle) return;
+
+	if (!GVars.ReadyOrNotChar) return;
+
+	if (MiscSettings.ReticleWhenThrowing && !((APlayerCharacter*)GVars.ReadyOrNotChar)->bQuickThrowing) return;
+
 	ImVec2 ScreenSize = ImGui::GetIO().DisplaySize;
 	ImVec2 WindowPos = ImGui::GetWindowPos();
 	ImGui::GetBackgroundDrawList()->AddCircleFilled(
 		ImVec2(ScreenSize.x / 2 + MiscSettings.ReticlePosition.x, ScreenSize.y / 2 + MiscSettings.ReticlePosition.y),
 		MiscSettings.ReticleSize, 
 		Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
+}
+
+void Cheats::Troll()
+{
+	if (!GVars.ReadyOrNotChar || !GVars.ReadyOrNotChar->GetEquippedWeapon() || !GVars.ReadyOrNotChar->PlayerState) return;
+	//GVars.ReadyOrNotChar->Server_Yell();
+	SDK::FRChatMessage* Msg = new SDK::FRChatMessage();
+	Msg->Message = L"Sigma";
+	Msg->SenderName = L"The Alpha";
+	Msg->Color = FLinearColor();
+	Msg->bCommand = false;
+	Msg->AssociatedTeam = ETeamType::TT_SQUAD;
+	Msg->TargetPlayerController = GVars.PlayerController;
+	Msg->TargetTeam = ETeamType::TT_SQUAD;
+	Msg->UniqueNetIdStr = L"";
+	Msg->Timestamp = FDateTime();
+	Msg->bKillfeed = false;
+	Msg->SenderPlayerState = (AReadyOrNotPlayerState*)GVars.ReadyOrNotChar->PlayerState;
+	
+	if (GVars.PlayerController->HasAuthority())
+	{
+		// we need to send it to every player individually
+		ULevel* Level = GVars.Level;
+		if (!Level) return;
+		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (!ActorsCopy) return;
+		for (AActor* Actor : ActorsCopy)
+		{
+			if (!Actor) continue;
+			if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
+			((AReadyOrNotPlayerController*)GVars.PlayerController)->Server_SendChatMessage(*Msg);
+		}
+		
+	}
+	else
+	{
+		// we need to send it to every player individually
+		ULevel* Level = GVars.Level;
+		if (!Level) return;
+		TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (!ActorsCopy) return;
+		for (AActor* Actor : ActorsCopy)
+		{
+			if (!Actor) continue;
+			if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
+			((AReadyOrNotPlayerController*)GVars.PlayerController)->SendChatMessage(*Msg);
+		}
+	}
+	delete Msg;
+}
+
+void Cheats::GetAllEvidence()
+{
+	if (!GVars.ReadyOrNotChar || !GVars.Level) return;
+	auto RONC = (APlayerCharacter*)GVars.ReadyOrNotChar;
+
+	TArray<AActor*> Actors = GVars.Level->Actors;
+
+	for (AActor* Actor : Actors)
+	{
+		if (!Actor) continue;
+		if (Actor->IsA(ABaseWeapon::StaticClass()))
+		{
+			RONC->PickupEvidence(Actor);
+		}
+	}
+	
+}
+
+void Cheats::TriggerBot()
+{
+	if (!CVars.TriggerBot) return;
+	if (!GVars.PlayerController || !GVars.Level || !GVars.ReadyOrNotChar) return;
+
+	FHitResult HitResult;
+
+	if (UKismetSystemLibrary::LineTraceSingle(
+		GVars.World,
+		GVars.PlayerController->PlayerCameraManager->GetCameraLocation(),
+		GVars.PlayerController->PlayerCameraManager->GetCameraLocation() + (GVars.PlayerController->PlayerCameraManager->GetActorForwardVector() * 10000.0f),
+		ETraceTypeQuery::TraceTypeQuery1,
+		false,
+		TArray<AActor*>(),
+		EDrawDebugTrace::ForDuration,
+		&HitResult,
+		true,
+		FLinearColor(255, 0, 0, 255),
+		FLinearColor(255, 255, 255, 255),
+		5.0f
+	))
+	{
+		if (HitResult.bBlockingHit && HitResult.HitObjectHandle.Actor.Get())
+		{
+			AActor* HitActor = HitResult.HitObjectHandle.Actor.Get();
+			if (HitActor && (HitActor->IsA(ASuspectCharacter::StaticClass()) || MiscSettings.TriggerBotTargetsCivilians && HitActor->IsA(ACivilianCharacter::StaticClass())))
+			{
+				if (((AReadyOrNotCharacter*)HitActor)->IsDeadOrUnconscious() || ((AReadyOrNotCharacter*)HitActor)->IsIncapacitated() || ((AReadyOrNotCharacter*)HitActor)->IsArrestedOrSurrendered())
+					return;
+
+				if (MiscSettings.TriggerBotUsesSilentAim && GVars.ReadyOrNotChar->GetEquippedWeapon())
+				{
+					GVars.ReadyOrNotChar->GetEquippedWeapon()->Server_OnFire(FRotator(), HitResult.ImpactPoint, 0);
+					return;
+				}
+				if (GVars.ReadyOrNotChar->GetEquippedWeapon())
+				{
+					GVars.ReadyOrNotChar->GetEquippedWeapon()->Server_OnFire(
+						GVars.PlayerController->PlayerCameraManager->GetCameraRotation(), // Direction: if we don't set this the bullet just chills
+						GVars.PlayerController->PlayerCameraManager->GetCameraLocation(), // Start location: We set this to the camera location so it looks normal and isn't a silent aim
+						0); // Seed: IDK what it does so we just ignore it
+					return;
+				}
+			}
+		}
+	}
+}
+
+void Cheats::RenderEnabledOptions()
+{
+	if (!CVars.RenderOptions) return;
+	float Hue = fmodf(ImGui::GetTime() * 0.2f, 1.0f); // cycles every 5s
+	ImVec4 Color = ImColor::HSV(Hue, 1.f, 1.f);
+
+	ImGui::SetNextWindowBgAlpha(0.3);
+	ImGui::Begin("Enabled Options", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoTitleBar);
+
+	ImGui::SetWindowPos(ImVec2(10, 30));
+
+	ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Enabled Options:");
+	if (CVars.GodMode)
+		ImGui::TextColored(Color, "God Mode");
+	if (CVars.InfAmmo)
+		ImGui::TextColored(Color, "Infinite Ammo");
+	if (CVars.Aimbot)
+		ImGui::TextColored(Color, "Aimbot");
+	if (CVars.ESP)
+		ImGui::TextColored(Color, "ESP");
+	if (CVars.SpeedEnabled)
+		ImGui::TextColored(Color, "Speed x%.1f", CVars.Speed);
+	if (CVars.SilentAim)
+		ImGui::TextColored(Color, "Silent Aim");
+	if (CVars.NoClip)
+		ImGui::TextColored(Color, "No Clip");
+	if (CVars.Reticle)
+		ImGui::TextColored(Color, "Reticle");
+	if (CVars.Troll)
+		ImGui::TextColored(Color, "Troll");
+	if (CVars.TriggerBot)
+		ImGui::TextColored(Color, "Trigger Bot");
+	ImGui::End();
 }

@@ -41,6 +41,9 @@ struct MiscSettingsStruct {
 	ImVec4 ReticleColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
 	float ReticleSize = 5.0f;
 	ImVec2 ReticlePosition = ImVec2(0.0f, 0.0f);
+	bool ReticleWhenThrowing = false;
+	bool TriggerBotTargetsCivilians = false;
+	bool TriggerBotUsesSilentAim = false;
 } inline MiscSettings;
 
 struct CVarsstruct
@@ -52,9 +55,11 @@ struct CVarsstruct
 	float Speed = 1;
 	bool SpeedEnabled = false;
 	bool SilentAim = false;
-	bool AlwaysAllowGuns = false;
 	bool NoClip = false;
 	bool Reticle = false;
+	bool Troll = false;
+	bool TriggerBot = false;
+	bool RenderOptions = false;
 } inline CVars;
 
 struct Settingsstruct
@@ -73,9 +78,12 @@ struct Cheats
 	static void SetPlayerSpeed();
 	static void SilentAim();
 	static void AddMag();
-	static void Revive();
 	static void ArrestAll(ETeam Team); // Arrest all of a specific team
 	static void KillAll(ETeam Team);   // Kill all of a specific team
-	static void ToggleNoClip();
+	static void UpdateNoClip();
 	static void DrawReticle();
+	static void Troll();
+	static void GetAllEvidence();
+	static void TriggerBot();
+	static void RenderEnabledOptions();
 };

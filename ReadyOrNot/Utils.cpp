@@ -146,3 +146,20 @@ AReadyOrNotCharacter* Utils::GetBestTarget(float AngleWeight, float MaxFOV, bool
 
     return BestTarget;
 }
+
+FVector Utils::FRotatorToVector(const FRotator& Rot)
+{
+    double PitchRad = Rot.Pitch * (3.14159265358979323846 / 180.0);
+    double YawRad = Rot.Yaw * (3.14159265358979323846 / 180.0);
+
+    double CP = cos(PitchRad);
+    double SP = sin(PitchRad);
+    double CY = cos(YawRad);
+    double SY = sin(YawRad);
+
+    return FVector(
+        CP * CY,   // X
+        CP * SY,   // Y
+        SP         // Z
+    ).GetNormalized(); // normalize just in case
+}

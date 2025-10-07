@@ -40,6 +40,13 @@ static void InitImGui(HWND hwnd);
 void SaveSettings();
 void LoadSettings();
 
+static ImGuiKey TriggerBotKey = ImGuiKey_None;
+static bool TriggerBotKeyDown = false;
+static ImGuiKey AimbotKey = ImGuiKey_None;
+static bool AimbotKeyDown = false;
+static ImGuiKey ESPKey = ImGuiKey_None;
+static bool ESPKeyDown = false;
+
 typedef HRESULT(__stdcall* tPresent)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 tPresent oPresent = nullptr;
 IDXGISwapChain* pSwapChain = nullptr;
@@ -272,6 +279,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				{
 					Cheats::AddMag();
 				}
+
+				ImGui::Checkbox("TriggerBot", &CVars.TriggerBot);
+
 				ImGui::EndTabItem();
 			}
 
@@ -286,7 +296,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				{
 					Cheats::KillAll(ETeam::TEAM_CIVILIAN);
 				}
-
+				HostOnlyTooltip();
 				if (ImGui::Button("Arrest All Suspects"))
 				{
 					Cheats::ArrestAll(ETeam::TEAM_SUSPECT);
@@ -298,11 +308,33 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				}
 				AddDefaultTooltip("This will also automatically report them.");
 
+				if (ImGui::Button("Collect All Evidence"))
+				{
+					Cheats::GetAllEvidence();
+				}
+
 				ImGui::EndTabItem();
 			}
 
 			if (ImGui::BeginTabItem("Misc"))
 			{
+				ImGui::Checkbox("NoClip", &CVars.NoClip);
+				AddDefaultTooltip("Doesn't work currently.");
+				HostOnlyTooltip();
+
+				ImGui::Checkbox("Troll", &CVars.Troll);
+
+				if (ImGui::Button("Save Settings"))
+				{
+					SaveSettings();
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Load Settings"))
+				{
+					LoadSettings();
+				}
+				AddDefaultTooltip("These only save and load the configs not which cheats are enabled.");
+
 				ImGui::Checkbox("Debug", &Debug);
 				AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
 
@@ -365,6 +397,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 				if (ImGui::TreeNode("Misc"))
 				{
+					ImGui::SeparatorText("Reticle Settings");
+
 					ImGui::Checkbox("Reticle", &CVars.Reticle);
 
 					ImGui::ColorEdit4("Reticle Color", (float*)&MiscSettings.ReticleColor);
@@ -372,6 +406,86 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 					ImGui::DragFloat2("Reticle Position", (float*)&MiscSettings.ReticlePosition, 1, -100, 100);
 
 					ImGui::SliderFloat("Reticle Size", &MiscSettings.ReticleSize, 1, 15);
+
+					ImGui::Checkbox("Only Show Reticle while Throwing a Grenade", &MiscSettings.ReticleWhenThrowing);
+
+					ImGui::SeparatorText("TriggerBot Settings");
+
+					ImGui::Checkbox("TriggerBot Shoots Civilians", &MiscSettings.TriggerBotTargetsCivilians);
+
+					ImGui::Checkbox("TriggerBot Uses SilentAim", &MiscSettings.TriggerBotUsesSilentAim);
+					AddDefaultTooltip("Guarantees you will hit the target");
+
+					ImGui::SeparatorText("Other");
+
+					ImGui::Checkbox("Show Enabled Options", &CVars.RenderOptions);
+
+					ImGui::SeparatorText("KeyBinds");
+
+					// Create a combo box
+					const char* TBpreview = ImGui::GetKeyName(TriggerBotKey);
+					if (!TBpreview) TBpreview = "None";
+
+					if (ImGui::BeginCombo("Select Key for TriggerBot", TBpreview))
+					{
+						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
+						{
+							ImGuiKey current = static_cast<ImGuiKey>(key);
+							const char* keyName = ImGui::GetKeyName(current);
+							if (!keyName || !*keyName) continue; // skip empty names
+
+							bool isSelected = (TriggerBotKey == current);
+							if (ImGui::Selectable(keyName, isSelected))
+								TriggerBotKey = current;
+
+							if (isSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					const char* ABpreview = ImGui::GetKeyName(AimbotKey);
+					if (!ABpreview) ABpreview = "None";
+
+					if (ImGui::BeginCombo("Select Key for Aimbot", ABpreview))
+					{
+						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
+						{
+							ImGuiKey current = static_cast<ImGuiKey>(key);
+							const char* keyName = ImGui::GetKeyName(current);
+							if (!keyName || !*keyName) continue; // skip empty names
+
+							bool isSelected = (AimbotKey == current);
+							if (ImGui::Selectable(keyName, isSelected))
+								AimbotKey = current;
+
+							if (isSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+
+					const char* ESPpreview = ImGui::GetKeyName(ESPKey);
+					if (!ESPpreview) ESPpreview = "None";
+
+					if (ImGui::BeginCombo("Select Key for Aimbot", ESPpreview))
+					{
+						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
+						{
+							ImGuiKey current = static_cast<ImGuiKey>(key);
+							const char* keyName = ImGui::GetKeyName(current);
+							if (!keyName || !*keyName) continue; // skip empty names
+
+							bool isSelected = (ESPKey == current);
+							if (ImGui::Selectable(keyName, isSelected))
+								ESPKey = current;
+
+							if (isSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
 
 					ImGui::TreePop();
 				}
@@ -386,6 +500,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		ImGui::End();
 	}
 
+	if (CVars.RenderOptions)
+		Cheats::RenderEnabledOptions();
+
 	if (CVars.ESP)
 		Cheats::RenderESP();
 
@@ -398,8 +515,17 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	if (CVars.Aimbot)
 		Cheats::Aimbot();
 
+	if (CVars.NoClip)
+		Cheats::UpdateNoClip();
+
+	if (CVars.TriggerBot)
+		Cheats::TriggerBot();
+
 	if (CVars.SpeedEnabled)
 		Cheats::SetPlayerSpeed();
+
+	if (CVars.Troll)
+		Cheats::Troll();
 
 	if (pRenderTargetView) {
 		pContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr);
@@ -417,6 +543,30 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	ImGui::Render();
 	
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	if (TriggerBotKey != ImGuiKey_None && ImGui::IsKeyPressed(TriggerBotKey))
+	{
+		TriggerBotKeyDown = true;
+		CVars.TriggerBot = !CVars.TriggerBot;
+	}
+	else if (TriggerBotKey != ImGuiKey_None && ImGui::IsKeyReleased(TriggerBotKey))
+		TriggerBotKeyDown = false;
+
+	if (AimbotKey != ImGuiKey_None && ImGui::IsKeyPressed(AimbotKey))
+	{
+		AimbotKeyDown = true;
+		CVars.Aimbot = !CVars.Aimbot;
+	}
+	else if (AimbotKey != ImGuiKey_None && ImGui::IsKeyReleased(AimbotKey))
+		AimbotKeyDown = false;
+
+	if (ESPKey != ImGuiKey_None && ImGui::IsKeyPressed(ESPKey))
+	{
+		ESPKeyDown = true;
+		CVars.ESP = !CVars.ESP;
+	}
+	else if (ESPKey != ImGuiKey_None && ImGui::IsKeyReleased(ESPKey))
+		ESPKeyDown = false;
 
 	return oPresent ? oPresent(SwapChain, SyncInterval, Flags) : S_OK;
 }
@@ -446,8 +596,6 @@ DWORD MainThread(HMODULE hModule)
 	FILE* Dummy;
 	freopen_s(&Dummy, "CONOUT$", "w", stdout);
 	freopen_s(&Dummy, "CONIN$", "r", stdin);
-
-	 ////
 
 	std::cout << "Cheat Injecting...\n";
 
@@ -581,6 +729,13 @@ void SaveSettings()
 	file << AimbotSettings.MinDistance << '\n';
 	file << AimbotSettings.Smooth << '\n';
 	file << AimbotSettings.SmoothingVector << '\n';
+	file << AimbotSettings.DrawArrow << '\n';
+	file << AimbotSettings.DrawFOV << '\n';
+	file << MiscSettings.Reticle << '\n';
+	file << MiscSettings.ReticleColor.x << '\n' << MiscSettings.ReticleColor.y << '\n' << MiscSettings.ReticleColor.z << '\n' << MiscSettings.ReticleColor.w << '\n';
+	file << MiscSettings.ReticlePosition.x << '\n' << MiscSettings.ReticlePosition.y << '\n';
+	file << MiscSettings.ReticleSize << '\n';
+	file << CVars.RenderOptions << '\n';
 
 	file.close();
 }
@@ -611,6 +766,13 @@ void LoadSettings()
 	infile >> AimbotSettings.MinDistance;
 	infile >> AimbotSettings.Smooth;
 	infile >> AimbotSettings.SmoothingVector;
+	infile >> AimbotSettings.DrawArrow;
+	infile >> AimbotSettings.DrawFOV;
+	infile >> MiscSettings.Reticle;
+	infile >> MiscSettings.ReticleColor.x >> MiscSettings.ReticleColor.y >> MiscSettings.ReticleColor.z >> MiscSettings.ReticleColor.w;
+	infile >> MiscSettings.ReticlePosition.x >> MiscSettings.ReticlePosition.y;
+	infile >> MiscSettings.ReticleSize;
+	infile >> CVars.RenderOptions;
 
 	infile.close();
 }

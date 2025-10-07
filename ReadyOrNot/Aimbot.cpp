@@ -24,11 +24,18 @@ void Cheats::Aimbot()
     float BestAngle = 99999.0f;
     float BestDist = 999999.f;
 
+    ImVec2 ScreenSize = ImGui::GetIO().DisplaySize;
+    if (AimbotSettings.DrawFOV)
+    {
+        ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), AimbotSettings.MaxFOV, IM_COL32(255, 0, 0, 255));
+    }
+
     for (int i = 0; i < Level->Actors.Num(); ++i)
     {
         AActor* Actor = Level->Actors[i];
         AReadyOrNotCharacter* TargetActor;
 		if (!Actor) continue;
+
         if (Actor->IsA(ASuspectCharacter::StaticClass()) || AimbotSettings.TargetCivilians && Actor->IsA(ACivilianCharacter::StaticClass()))
         {
             TargetActor = (AReadyOrNotCharacter*)Actor;
@@ -73,6 +80,7 @@ void Cheats::Aimbot()
 
 		// We are aiming from the right eye so we need to offset the position a bit based on distance
         PlayerPos += (GVars.Character->GetActorRightVector() * (Dist / 1000));
+		PlayerPos -= (GVars.Character->GetActorUpVector() * (Dist / 2000));
 
         FVector Dir = Normalize(Delta);
         float Dot = Dot3(Forward, Dir);
@@ -127,17 +135,11 @@ void Cheats::Aimbot()
     }
 
 	FVector2D ScreenPos;
-	ImVec2 ScreenSize = ImGui::GetIO().DisplaySize;
 
     if (AimbotSettings.DrawArrow && PC->ProjectWorldLocationToScreen(AimPos, &ScreenPos, true))
     {
         ImGui::GetBackgroundDrawList()->AddLine(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), ImVec2(ScreenPos.X, ScreenPos.Y), IM_COL32(255, 255, 255, 255), 2);
 		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), 3, IM_COL32(255, 0, 0, 255), 0);
-	}
-
-	if (AimbotSettings.DrawFOV)
-	{
-        ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(ScreenSize.x / 2, ScreenSize.y / 2), AimbotSettings.MaxFOV, IM_COL32(255, 0, 0, 255));
 	}
 
     PC->SetControlRotation(FinalRot);
