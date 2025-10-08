@@ -179,9 +179,6 @@ bool Utils::IsValidActor(AActor* Actor)
 {
     if (!Actor) return false;
 
-    uintptr_t VTablePtr = *(uintptr_t*)Actor;
-    if (!VTablePtr) return false;
-
 	if (!Actor->VTable) return false; // additional check
 
 	if (Actor->bActorIsBeingDestroyed) return false;

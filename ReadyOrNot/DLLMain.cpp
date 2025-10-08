@@ -65,32 +65,6 @@ ID3D11DeviceContext* pContext = nullptr;
 ID3D11RenderTargetView* pRenderTargetView = nullptr;
 DXGI_SWAP_CHAIN_DESC sd = {};
 
-static void AddDefaultTooltip(const char* Text)
-{
-	ImGui::SameLine();
-	ImGui::TextDisabled("(?)");
-
-	if (ImGui::IsItemHovered())
-	{
-		ImGui::BeginTooltip();
-		ImGui::Text(Text);
-		ImGui::EndTooltip();
-	}
-}
-
-static void HostOnlyTooltip()
-{
-	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(255, 0, 0, 255), "(!)");
-
-	if (ImGui::IsItemHovered())
-	{
-		ImGui::BeginTooltip();
-		ImGui::TextColored(ImVec4(255, 0, 0, 255), "Only works as host any use while not host will most likely crash your game");
-		ImGui::EndTooltip();
-	}
-}
-
 void InitImGui(HWND hwnd)
 {
 	if (!pDevice || !pContext) {
@@ -245,7 +219,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			if (ImGui::BeginTabItem("About"))
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
-				ImGui::Text("Version 1.7.0");
+				ImGui::Text("Version 1.9.0");
 				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)

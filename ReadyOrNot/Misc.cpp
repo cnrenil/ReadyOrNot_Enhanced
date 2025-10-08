@@ -531,7 +531,9 @@ void Cheats::ListPlayers()
 		if (!Player->PlayerState->GetPlayerName()) continue;
 
 		ImGui::TextColored(Color, "%s", Player->PlayerState->GetPlayerName().ToString());
-		if (Player->Controller == GVars.PlayerController) continue; // skip ourselves
+
+		if (Player->GetController() && Player->GetController() == GVars.PlayerController) continue; // skip ourselves
+
 		if (GVars.PlayerController && GVars.PlayerController->HasAuthority())
 		{
 			ImGui::SameLine();

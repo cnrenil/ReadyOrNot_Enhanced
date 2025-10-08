@@ -26,6 +26,32 @@ struct PlayerCheatData
 // Global map to store per-player cheat data
 inline std::unordered_map<APlayerCharacter*, PlayerCheatData> PlayerCheatMap;
 
+inline void AddDefaultTooltip(const char* Text)
+{
+	ImGui::SameLine();
+	ImGui::TextDisabled("(?)");
+
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::Text(Text);
+		ImGui::EndTooltip();
+	}
+}
+
+inline void HostOnlyTooltip()
+{
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(255, 0, 0, 255), "(!)");
+
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::TextColored(ImVec4(255, 0, 0, 255), "Only works as host any use while not host will most likely crash your game");
+		ImGui::EndTooltip();
+	}
+}
+
 struct Utils
 {
 	static UWorld* GetWorldSafe(); // can return nullptr
