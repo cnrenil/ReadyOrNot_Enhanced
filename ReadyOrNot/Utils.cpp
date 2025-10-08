@@ -61,6 +61,7 @@ APlayerController* Utils::GetPlayerController()
             printf("[Error] PlayerController not found!\n");
         }
     }
+    if (!Utils::IsValidActor(PlayerController)) return nullptr;
     return PlayerController;
 }
 
@@ -80,6 +81,7 @@ void Utils::PrintActors(const char* Exclude)
             AActor* Actor = Actors[i];
             if (Actor)
             {
+                if (!Utils::IsValidActor(Actor)) continue;
                 if (Exclude && Actor->GetName().find(Exclude) != std::string::npos)
 					continue;
 
@@ -113,6 +115,8 @@ AReadyOrNotCharacter* Utils::GetBestTarget(float AngleWeight, float MaxFOV, bool
 
     for (AActor* Actor : GVars.Level->Actors)
     {
+        if (!Utils::IsValidActor(Actor)) continue;
+
         if (!Actor || Actor == GVars.ReadyOrNotChar) continue;
 
         if (!Actor->IsA(ASuspectCharacter::StaticClass()) &&
@@ -149,8 +153,8 @@ AReadyOrNotCharacter* Utils::GetBestTarget(float AngleWeight, float MaxFOV, bool
 
 FVector Utils::FRotatorToVector(const FRotator& Rot)
 {
-    double PitchRad = Rot.Pitch * (3.14159265358979323846 / 180.0);
-    double YawRad = Rot.Yaw * (3.14159265358979323846 / 180.0);
+    double PitchRad = Rot.Pitch * (std::numbers::pi / 180.0);
+    double YawRad = Rot.Yaw * (std::numbers::pi / 180.0);
 
     double CP = cos(PitchRad);
     double SP = sin(PitchRad);
@@ -162,4 +166,54 @@ FVector Utils::FRotatorToVector(const FRotator& Rot)
         CP * SY,   // Y
         SP         // Z
     ).GetNormalized(); // normalize just in case
+}
+
+// Helper function to get or create player cheat data
+PlayerCheatData& Utils::GetPlayerCheats(APlayerCharacter* Player)
+{
+    // If player doesn't exist in map, this creates a default entry
+    return PlayerCheatMap[Player];
+}
+
+bool Utils::IsValidActor(AActor* Actor)
+{
+    if (!Actor) return false;
+
+    uintptr_t VTablePtr = *(uintptr_t*)Actor;
+    if (!VTablePtr) return false;
+
+	if (!Actor->VTable) return false; // additional check
+
+	if (Actor->bActorIsBeingDestroyed) return false;
+
+    if (Actor->IsActorBeingDestroyed()) return false;
+    return true;
+}
+
+float Utils::GetFOVFromScreenCoords(const ImVec2& ScreenLocation)
+{
+    ImVec2 ScreenCenter(GVars.ScreenSize.x / 2.0f, GVars.ScreenSize.y / 2.0f);
+
+    float DeltaX = ScreenLocation.x - ScreenCenter.x;
+    float DeltaY = ScreenLocation.y - ScreenCenter.y;
+
+    return std::sqrt(DeltaX * DeltaX + DeltaY * DeltaY);
+}
+
+ImVec2 Utils::FVector2DToImVec2(FVector2D Vector)
+{
+	return ImVec2(Vector.X, Vector.Y);
+}
+
+FRotator Utils::GetRotationToTarget(const FVector& Start, const FVector& Target)
+{
+    FVector Delta = Target - Start;
+    Delta.Normalize(); // Important for safe calculations
+
+    FRotator Rotation;
+    Rotation.Pitch = std::atan2(Delta.Z, std::sqrt(Delta.X * Delta.X + Delta.Y * Delta.Y)) * (180.0f / std::numbers::pi);
+    Rotation.Yaw = std::atan2(Delta.Y, Delta.X) * (180.0f / std::numbers::pi);
+    Rotation.Roll = 0.0f;
+
+    return Rotation;
 }

@@ -13,10 +13,18 @@ enum class ETeam
 	TEAM_MAX
 };
 
-struct BoneList
+// Per-player cheat settings
+struct PlayerCheatData
 {
-	int Current = 0;              // index into BoneNames (0..Count-1)
-} inline boneList;
+	bool GodMode = false;
+	bool InfAmmo = false;
+
+	// Constructor
+	PlayerCheatData() = default;
+};
+
+// Global map to store per-player cheat data
+inline std::unordered_map<APlayerCharacter*, PlayerCheatData> PlayerCheatMap;
 
 struct Utils
 {
@@ -27,6 +35,11 @@ struct Utils
 	static FRotator VectorToRotation(const FVector& Vec);
 	static AReadyOrNotCharacter* GetBestTarget(float AngleWeight, float MaxFOV, bool TargetCivilians);
 	static FVector FRotatorToVector(const FRotator& Rot);
+	static PlayerCheatData& GetPlayerCheats(APlayerCharacter* Player);
+	static bool IsValidActor(AActor* Actor);
+	static float GetFOVFromScreenCoords(const ImVec2& ScreenLocation);
+	static ImVec2 FVector2DToImVec2(FVector2D Vector);
+	static FRotator GetRotationToTarget(const FVector& Start, const FVector& Target);
 };
 
 struct Variables
@@ -36,7 +49,10 @@ struct Variables
 	ACharacter* Character = nullptr;
 	AReadyOrNotCharacter* ReadyOrNotChar = nullptr;
 	UWorld* World = nullptr;
+	AReadyOrNotGameState* GameState = nullptr;
+	TArray<APlayerCharacter*> Players = TArray<APlayerCharacter*>();
 	ULevel* Level = nullptr;
+	ImVec2 ScreenSize;
 
 	// Constructor to initialize variables safely
 	Variables() {
@@ -55,6 +71,11 @@ struct Variables
 			this->Character = nullptr;
 			this->ReadyOrNotChar = nullptr;
 			this->World = Utils::GetWorldSafe();
+			if (this->World && this->World->GameState && this->World->GameState->IsA(AReadyOrNotGameState::StaticClass()))
+				this->GameState = this->World ? static_cast<AReadyOrNotGameState*>(this->World->GameState) : nullptr;
+			else
+				this->GameState = nullptr;
+			this->Players = this->GameState ? this->GameState->AllPlayerCharacters : TArray<APlayerCharacter*>();
 			this->Level = this->World ? this->World->PersistentLevel : nullptr;
 			return;
 		}
@@ -102,6 +123,11 @@ struct Variables
 		if (this->World && this->Level != this->World->PersistentLevel) {
 			this->Level = this->World->PersistentLevel;
 		}
+		if (this->World && this->World->GameState && this->GameState != this->World->GameState && this->World->GameState->IsA(AReadyOrNotGameState::StaticClass())) 
+			this->GameState = static_cast<AReadyOrNotGameState*>(this->World->GameState);
+		
+		if (ImGui::GetCurrentContext())
+			ScreenSize = ImGui::GetIO().DisplaySize;
 	}
 } inline GVars;
 

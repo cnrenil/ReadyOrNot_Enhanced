@@ -22,6 +22,20 @@
 
 using BasicFilesImpleUtils::StringToName;
 
+static const std::pair<const char*, std::string> BoneOptions[] = {
+	{"Head", BoneList.HeadBone},
+	{"Neck", BoneList.NeckBone},
+	{"Chest", BoneList.ChestBone},
+	{"Stomach", BoneList.StomachBone},
+	{"Pelvis", BoneList.PelvisBone},
+	{"Left Shoulder", BoneList.LeftShoulderBone},
+	{"Left Elbow", BoneList.LeftElbowBone},
+	{"Left Hand", BoneList.LeftHandBone},
+	{"Right Shoulder", BoneList.RightShoulderBone},
+	{"Right Elbow", BoneList.RightElbowBone},
+	{"Right Hand", BoneList.RightHandBone}
+};
+
 static bool ESPEnabled = false;
 static bool AimbotEnabled = false;
 static bool AimbotLOS = true;
@@ -40,11 +54,8 @@ void SaveSettings();
 void LoadSettings();
 
 static ImGuiKey TriggerBotKey = ImGuiKey_None;
-static bool TriggerBotKeyDown = false;
-static ImGuiKey AimbotKey = ImGuiKey_None;
-static bool AimbotKeyDown = false;
 static ImGuiKey ESPKey = ImGuiKey_None;
-static bool ESPKeyDown = false;
+static ImGuiKey AimButton = ImGuiKey_None;
 
 typedef HRESULT(__stdcall* tPresent)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 tPresent oPresent = nullptr;
@@ -150,7 +161,7 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
 	if (ImGui::GetCurrentContext()) {
 		// Let ImGui handle input when menu is shown
-		if (ShowMenu && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
+		if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
 			return true;
 		}
 	}
@@ -200,11 +211,16 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		{
 			auto PlayerState = GVars.PlayerController->PlayerState;
 			auto PlayerName = PlayerState->GetPlayerName().ToString();
-			if (PlayerName == "Peachmarrow12" || PlayerName == "DiaperBlastrPC")
+			if (PlayerName == "PeachMarrow12" || PlayerName == "DiaperBlastrPC")
 				CVars.SecretFeatures = true;
 		}
 
 		MiscSettings.SpamText.reserve(512);
+	}
+
+	if (GVars.ScreenSize.x != ImGui::GetIO().DisplaySize.x || GVars.ScreenSize.y != ImGui::GetIO().DisplaySize.y)
+	{
+		GVars.ScreenSize = ImGui::GetIO().DisplaySize;
 	}
 
 	if (!oPresent)
@@ -266,6 +282,11 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				AddDefaultTooltip("Not fully fleshed out so use with caution.");
 				HostOnlyTooltip();
 
+				if (ImGui::SliderFloat("FOV", &CVars.FOV, 0.1f, 179.9f))
+				{
+					Cheats::ChangeFOV();
+				}
+
 				ImGui::EndTabItem();
 			}
 
@@ -321,6 +342,16 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 					Cheats::GetAllEvidence();
 				}
 
+				if (ImGui::Button("AutoWin"))
+				{
+					Cheats::AutoWin();
+				}
+
+				if (ImGui::Button("Unlock All Doors"))
+				{
+					Cheats::UnlockDoors();
+				}
+
 				ImGui::EndTabItem();
 			}
 
@@ -338,6 +369,11 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 					LoadSettings();
 				}
 				AddDefaultTooltip("These only save and load the configs not which cheats are enabled.");
+
+				if (ImGui::Button("Force Ready"))
+				{
+					Cheats::ForceReady();
+				}
 
 				ImGui::Checkbox("Debug", &Debug);
 				AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
@@ -377,6 +413,45 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::Checkbox("Draw FOV", &AimbotSettings.DrawFOV);
 
+					if (ImGui::BeginCombo("Target Bone", AimbotSettings.TargetBone.c_str()))
+					{
+						for (int i = 0; i < IM_ARRAYSIZE(BoneOptions); i++)
+						{
+							bool is_selected = (AimbotSettings.TargetBone == BoneOptions[i].second);
+							if (ImGui::Selectable(BoneOptions[i].first, is_selected))
+							{
+								AimbotSettings.TargetBone = BoneOptions[i].second;
+							}
+							if (is_selected)
+								ImGui::SetItemDefaultFocus(); // make the selected item visible
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::Checkbox("Require HotKey", &AimbotSettings.RequireKeyHeld);
+
+					const char* ABpreview = ImGui::GetKeyName(AimbotSettings.AimbotKey);
+					if (!ABpreview) ABpreview = "None";
+
+					if (ImGui::BeginCombo("Select Key for Aimbot", ABpreview))
+					{
+						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
+						{
+							ImGuiKey current = static_cast<ImGuiKey>(key);
+							const char* keyName = ImGui::GetKeyName(current);
+							if (!keyName || !*keyName) continue; // skip empty names
+
+							bool isSelected = (AimbotSettings.AimbotKey == current);
+							if (ImGui::Selectable(keyName, isSelected))
+								AimbotSettings.AimbotKey = current;
+
+							if (isSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+						AddDefaultTooltip("Only activate the aimbot while this key is held");
+					}
+
 					ImGui::TreePop();
 				}
 
@@ -385,6 +460,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 					ImGui::Checkbox("Show Team", &ESPSettings.ShowTeam);
 
 					ImGui::Checkbox("Show Box", &ESPSettings.ShowBox);
+
+					ImGui::Checkbox("Show Traps", &ESPSettings.ShowTraps);
 
 					ImGui::ColorEdit4("Suspect Color", (float*)&ESPSettings.SuspectColor, ImGuiColorEditFlags_NoInputs);
 
@@ -396,6 +473,17 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::ColorEdit4("Arrested Color", (float*)&ESPSettings.ArrestColor, ImGuiColorEditFlags_NoInputs);
 
+					if (ImGui::SliderFloat("Bone Opacity", &ESPSettings.BoneOpacity, 0.0f, 1.0f))
+					{
+						ESPSettings.SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, ESPSettings.BoneOpacity);
+						ESPSettings.CivilianColor = ImVec4(0.0f, 0.0f, 1.0f, ESPSettings.BoneOpacity);
+						ESPSettings.DeadColor = ImVec4(0.0f, 0.0f, 0.0f, ESPSettings.BoneOpacity);
+						ESPSettings.TeamColor = ImVec4(0.0f, 1.0f, 0.0f, ESPSettings.BoneOpacity);
+						ESPSettings.ArrestColor = ImVec4(1.0f, 1.0f, 0.0f, ESPSettings.BoneOpacity);
+					}
+
+					ImGui::Checkbox("Show Objectives", &ESPSettings.ShowObjectives);
+					AddDefaultTooltip("The Objectives don't show the actual location");
 					ImGui::TreePop();
 				}
 
@@ -424,6 +512,10 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::Checkbox("Show Enabled Options", &CVars.RenderOptions);
 
+					ImGui::Checkbox("Promote when Spamming", &MiscSettings.Promote);
+
+					ImGui::Checkbox("List Players", &CVars.ListPlayers);
+
 					ImGui::SeparatorText("KeyBinds");
 
 					// Create a combo box
@@ -448,32 +540,10 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 						ImGui::EndCombo();
 					}
 
-					const char* ABpreview = ImGui::GetKeyName(AimbotKey);
-					if (!ABpreview) ABpreview = "None";
-
-					if (ImGui::BeginCombo("Select Key for Aimbot", ABpreview))
-					{
-						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
-						{
-							ImGuiKey current = static_cast<ImGuiKey>(key);
-							const char* keyName = ImGui::GetKeyName(current);
-							if (!keyName || !*keyName) continue; // skip empty names
-
-							bool isSelected = (AimbotKey == current);
-							if (ImGui::Selectable(keyName, isSelected))
-								AimbotKey = current;
-
-							if (isSelected)
-								ImGui::SetItemDefaultFocus();
-						}
-						ImGui::EndCombo();
-					}
-
-
 					const char* ESPpreview = ImGui::GetKeyName(ESPKey);
 					if (!ESPpreview) ESPpreview = "None";
 
-					if (ImGui::BeginCombo("Select Key for Aimbot", ESPpreview))
+					if (ImGui::BeginCombo("Select Key for ESP", ESPpreview))
 					{
 						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
 						{
@@ -484,6 +554,27 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 							bool isSelected = (ESPKey == current);
 							if (ImGui::Selectable(keyName, isSelected))
 								ESPKey = current;
+
+							if (isSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+
+					const char* AimPreview = ImGui::GetKeyName(AimButton);
+					if (!AimPreview) AimPreview = "None";
+
+					if (ImGui::BeginCombo("Select AimLock button", AimPreview))
+					{
+						for (int key = ImGuiKey_NamedKey_BEGIN; key < ImGuiKey_NamedKey_END; ++key)
+						{
+							ImGuiKey current = static_cast<ImGuiKey>(key);
+							const char* keyName = ImGui::GetKeyName(current);
+							if (!keyName || !*keyName) continue; // skip empty names
+
+							bool isSelected = (AimButton == current);
+							if (ImGui::Selectable(keyName, isSelected))
+								AimButton = current;
 
 							if (isSelected)
 								ImGui::SetItemDefaultFocus();
@@ -520,8 +611,16 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		ImGui::End();
 	}
 
+	if (AimbotSettings.AimbotKey != ImGuiKey_None)
+	{
+		AimbotKeyDown = ImGui::IsKeyDown(AimbotSettings.AimbotKey);
+	}
+
 	if (CVars.RenderOptions)
 		Cheats::RenderEnabledOptions();
+
+	if (CVars.ListPlayers)
+		Cheats::ListPlayers();
 
 	if (CVars.ESP)
 		Cheats::RenderESP();
@@ -564,29 +663,15 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-	if (TriggerBotKey != ImGuiKey_None && ImGui::IsKeyPressed(TriggerBotKey))
+	if (TriggerBotKey != ImGuiKey_None && ImGui::IsKeyPressed(TriggerBotKey, false))
 	{
-		TriggerBotKeyDown = true;
 		CVars.TriggerBot = !CVars.TriggerBot;
 	}
-	else if (TriggerBotKey != ImGuiKey_None && ImGui::IsKeyReleased(TriggerBotKey))
-		TriggerBotKeyDown = false;
 
-	if (AimbotKey != ImGuiKey_None && ImGui::IsKeyPressed(AimbotKey))
+	if (ESPKey != ImGuiKey_None && ImGui::IsKeyPressed(ESPKey, false))
 	{
-		AimbotKeyDown = true;
-		CVars.Aimbot = !CVars.Aimbot;
-	}
-	else if (AimbotKey != ImGuiKey_None && ImGui::IsKeyReleased(AimbotKey))
-		AimbotKeyDown = false;
-
-	if (ESPKey != ImGuiKey_None && ImGui::IsKeyPressed(ESPKey))
-	{
-		ESPKeyDown = true;
 		CVars.ESP = !CVars.ESP;
 	}
-	else if (ESPKey != ImGuiKey_None && ImGui::IsKeyReleased(ESPKey))
-		ESPKeyDown = false;
 
 	return oPresent ? oPresent(SwapChain, SyncInterval, Flags) : S_OK;
 }
@@ -741,6 +826,7 @@ void SaveSettings()
 	file << ESPSettings.DeadColor.x << '\n' << ESPSettings.DeadColor.y << '\n' << ESPSettings.DeadColor.z << '\n' << ESPSettings.DeadColor.w << '\n';
 	file << ESPSettings.TeamColor.x << '\n' << ESPSettings.TeamColor.y << '\n' << ESPSettings.TeamColor.z << '\n' << ESPSettings.TeamColor.w << '\n';
 	file << ESPSettings.ArrestColor.x << '\n' << ESPSettings.ArrestColor.y << '\n' << ESPSettings.ArrestColor.z << '\n' << ESPSettings.ArrestColor.w << '\n';
+	file << ESPSettings.ShowObjectives << '\n';
 	file << AimbotSettings.MaxFOV << '\n';
 	file << AimbotSettings.LOS << '\n';
 	file << AimbotSettings.TargetCivilians << '\n';
@@ -757,6 +843,12 @@ void SaveSettings()
 	file << MiscSettings.ReticleSize << '\n';
 	file << CVars.RenderOptions << '\n';
 	file << MiscSettings.SpamText << '\n';
+	file << MiscSettings.Promote << '\n';
+	file << CVars.ListPlayers << '\n';
+	file << AimbotSettings.TargetBone << '\n';
+	file << AimbotSettings.RequireKeyHeld << '\n';
+	file << ESPSettings.ShowTraps << '\n';
+	file << ((int&)AimbotSettings.AimbotKey) << '\n';
 
 	file.close();
 }
@@ -779,6 +871,7 @@ void LoadSettings()
 	infile >> ESPSettings.DeadColor.x >> ESPSettings.DeadColor.y >> ESPSettings.DeadColor.z >> ESPSettings.DeadColor.w;
 	infile >> ESPSettings.TeamColor.x >> ESPSettings.TeamColor.y >> ESPSettings.TeamColor.z >> ESPSettings.TeamColor.w;
 	infile >> ESPSettings.ArrestColor.x >> ESPSettings.ArrestColor.y >> ESPSettings.ArrestColor.z >> ESPSettings.ArrestColor.w;
+	infile >> ESPSettings.ShowObjectives;
 	infile >> AimbotSettings.MaxFOV;
 	infile >> AimbotSettings.LOS;
 	infile >> AimbotSettings.TargetCivilians;
@@ -794,9 +887,13 @@ void LoadSettings()
 	infile >> MiscSettings.ReticlePosition.x >> MiscSettings.ReticlePosition.y;
 	infile >> MiscSettings.ReticleSize;
 	infile >> CVars.RenderOptions;
-
-	// read the rest of the line (skip leftover newline/whitespace) into the string
 	std::getline(infile >> std::ws, MiscSettings.SpamText);
+	infile >> MiscSettings.Promote;
+	infile >> CVars.ListPlayers;
+	infile >> AimbotSettings.TargetBone;
+	infile >> AimbotSettings.RequireKeyHeld;
+	infile >> ESPSettings.ShowTraps;
+	infile >> ((int&)AimbotSettings.AimbotKey);
 
 	infile.close();
 }

@@ -4,14 +4,34 @@
 #include "Utils.h"
 #include <string>
 
+inline bool AimbotKeyDown = false;
+
+struct BoneListStruct
+{
+	std::string HeadBone = "Head";
+	std::string NeckBone = "neck_1";
+	std::string ChestBone = "spine_2";
+	std::string StomachBone = "spine_1";
+	std::string PelvisBone = "pelvis";
+	std::string LeftShoulderBone = "clavicle_LE";
+	std::string LeftElbowBone = "lowerarm_LE";
+	std::string LeftHandBone = "hand_LE";
+	std::string RightShoulderBone = "clavicle_RI";
+	std::string RightElbowBone = "lowerarm_RI";
+	std::string RightHandBone = "hand_RI";
+} inline BoneList;
+
 struct EspSettingsstruct {
 	bool ShowTeam = true;
 	bool ShowBox = false;
-	ImVec4 SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-	ImVec4 CivilianColor = ImVec4(0.0f, 0.0f, 1.0f, 1.0f);
-	ImVec4 DeadColor = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-	ImVec4 TeamColor = ImVec4(0.0f, 1.0f, 0.0f, 1.0f);
-	ImVec4 ArrestColor = ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+	bool ShowTraps = true;
+	bool ShowObjectives = false;
+	float BoneOpacity = 1.0f;
+	ImVec4 SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, BoneOpacity);
+	ImVec4 CivilianColor = ImVec4(0.0f, 0.0f, 1.0f, BoneOpacity);
+	ImVec4 DeadColor = ImVec4(0.0f, 0.0f, 0.0f, BoneOpacity);
+	ImVec4 TeamColor = ImVec4(0.0f, 1.0f, 0.0f, BoneOpacity);
+	ImVec4 ArrestColor = ImVec4(1.0f, 1.0f, 0.0f, BoneOpacity);
 
 } inline ESPSettings;
 
@@ -26,6 +46,9 @@ struct AimbotSettingsstruct {
 	float SmoothingVector = 5.0f;
 	bool DrawArrow = false;
 	bool DrawFOV = false;
+	std::string TargetBone = BoneList.HeadBone;
+	bool RequireKeyHeld = false;
+	ImGuiKey AimbotKey = ImGuiKey_None;
 } inline AimbotSettings;
 
 struct SilentAimSettingsstruct {
@@ -50,6 +73,8 @@ struct CVarsstruct
 	bool Spam = false;
 	bool TriggerBot = false;
 	bool RenderOptions = false;
+	float FOV = 120.0f;
+	bool ListPlayers = false;
 } inline CVars;
 
 struct MiscSettingsStruct {
@@ -60,7 +85,8 @@ struct MiscSettingsStruct {
 	bool ReticleWhenThrowing = false;
 	bool TriggerBotTargetsCivilians = false;
 	bool TriggerBotUsesSilentAim = false;
-	std::string SpamText = "I am Peachmarrow13 check me out on UnknownCheats.me!";
+	std::string SpamText = "Created by peachmarrow13 check me out on UnknownCheats.me!";
+	bool Promote = true;
 } inline MiscSettings;
 
 struct Settingsstruct
@@ -87,5 +113,10 @@ struct Cheats
 	static void GetAllEvidence();
 	static void TriggerBot();
 	static void RenderEnabledOptions();
+	static void ChangeFOV();
 	static void Lean();
+	static void AutoWin();
+	static void UnlockDoors();
+	static void ListPlayers();
+	static void ForceReady();
 };

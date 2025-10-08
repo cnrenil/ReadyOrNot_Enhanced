@@ -114,6 +114,7 @@ BonePair CivilianSkeletonBones[] = {
 
 bool IsSuspect = false;
 bool IsSwat = false;
+bool IsPlayer = false;
 int32 ViewportX = 0.0f;
 int32 ViewportY = 0.0f;
 
@@ -122,37 +123,78 @@ auto RenderColor = IM_COL32(255, 255, 255, 255);
 void Cheats::RenderESP()
 {
 	if (!CVars.ESP) return;
-    if (!GVars.PlayerController) return;
+    if (!GVars.PlayerController || !GVars.Level) return;
 
     ULevel* Level = GVars.Level;
     if (!Level) return; 
+
+	if (ESPSettings.ShowObjectives && GVars.GameState)
+	{
+		AReadyOrNotGameState* GameState = GVars.GameState;
+		if (!GameState) return;
+
+		TArray<AObjective*> Objectives = GameState->MissionObjectives;
+
+		for (AObjective* Objective : Objectives)
+		{
+			if (!Objective) continue;
+
+            FVector2D ObjectiveScreen;
+
+            if (GVars.PlayerController->ProjectWorldLocationToScreen(Objective->K2_GetActorLocation(), &ObjectiveScreen, true))
+            {
+				ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ObjectiveScreen.X, ObjectiveScreen.Y), 3, IM_COL32(0, 255, 0, 255));
+				ImGui::GetBackgroundDrawList()->AddText(ImVec2(ObjectiveScreen.X + 5, ObjectiveScreen.Y - 5), IM_COL32(0, 255, 0, 255), Objective->ObjectiveName.ToString().c_str());
+            }
+		}
+	}
 
 	TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
     for (AActor* Actor : ActorsCopy)
     {
     	if (!Actor) continue;
 
-        FVector2D TrapScreen;
-
-        if (Actor->IsA(ATrapActor::StaticClass()) && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &TrapScreen, true))
+        if (ESPSettings.ShowTraps)
         {
-            ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(TrapScreen.X, TrapScreen.Y), 3, IM_COL32(255, 0, 0, 255));
-			ImGui::GetBackgroundDrawList()->AddText(ImVec2(TrapScreen.X + 5, TrapScreen.Y - 5), IM_COL32(255, 0, 0, 255), "Trap");
-        	continue;
+	        FVector2D TrapScreen;
+
+        	if (Actor->IsA(ATrapActor::StaticClass()) && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &TrapScreen, true))
+        	{
+				const char* TrapTypeName = "Unknown Trap";
+				if (((ATrapActor*)Actor)->TrapType == ETrapType::Explosive)
+					TrapTypeName = "Explosive Trap";
+				else if (((ATrapActor*)Actor)->TrapType == ETrapType::Flashbang)
+                    TrapTypeName = "FlashBang Trap";
+				else if (((ATrapActor*)Actor)->TrapType == ETrapType::Alarm)
+					TrapTypeName = "Alarm Trap";
+
+        		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(TrapScreen.X, TrapScreen.Y), 3, IM_COL32(255, 0, 0, 255));
+        		ImGui::GetBackgroundDrawList()->AddText(ImVec2(TrapScreen.X + 5, TrapScreen.Y - 5), IM_COL32(255, 0, 0, 255), TrapTypeName);
+        		continue;
+        	}
         }
 
         AReadyOrNotCharacter* TargetActor = nullptr;
 
         if (Actor->IsA(ASuspectCharacter::StaticClass()) || Actor->IsA(ACivilianCharacter::StaticClass()))
         {
-			TargetActor = (AReadyOrNotCharacter*)Actor;
+			TargetActor = reinterpret_cast<AReadyOrNotCharacter*>(Actor);
 			IsSwat = false;
+            IsPlayer = false;
         }
-		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass()) || Actor->IsA(APlayerCharacter::StaticClass())) 
+        else if (Actor->IsA(APlayerCharacter::StaticClass()))
+        {
+            TargetActor = reinterpret_cast<AReadyOrNotCharacter*>(Actor);
+            IsSuspect = false;
+            IsSwat = true;
+            IsPlayer = true;
+        }
+		else if (ESPSettings.ShowTeam && Actor->IsA(ASWATCharacter::StaticClass())) 
 		{
-			TargetActor = (AReadyOrNotCharacter*)Actor;
+			TargetActor = reinterpret_cast<AReadyOrNotCharacter*>(Actor);
             IsSuspect = false;
 			IsSwat = true;
+            IsPlayer = false;
 		}
     	else
 			continue;
@@ -209,10 +251,10 @@ void Cheats::RenderESP()
                     RenderColor,
                     1.5f
                 );
-           }
+            }
             if (ESPSettings.ShowBox && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true))
             {
-            	float distance = GVars.ReadyOrNotChar->GetDistanceTo(Actor);
+            	float distance = GVars.PlayerController->GetDistanceTo(Actor);
                 float boxHeight = 200000.0f / distance;     // tweak scaling factor
                 float boxWidth = boxHeight / 2.0f;
 
@@ -223,6 +265,14 @@ void Cheats::RenderESP()
                     0.0f,
                     15,
                     1.5f
+                );
+            }
+            if (ESPSettings.ShowTeam && IsPlayer && TargetActor && TargetActor->PlayerState && TargetActor->PlayerState->GetPlayerName() && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true))
+            {
+                ImGui::GetBackgroundDrawList()->AddText(
+                    ImVec2(ActorScreen.X, ActorScreen.Y + 50),
+                    RenderColor,
+                    TargetActor->PlayerState->GetPlayerName().ToString().c_str()
                 );
             }
         }
