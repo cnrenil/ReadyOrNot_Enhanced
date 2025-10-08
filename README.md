@@ -16,8 +16,8 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 ---
 ## Features
 - Open/close the menu with the insert key
-- Aimbot - FOV, Line of Sight, Prediction, and snap line.
-- ESP - Skeleton, Custom colors, and boxes.
+- Aimbot - FOV, Line of Sight, Prediction, HotKey, and snap line.
+- ESP - Skeleton, Customizable colours, Customizable Opacity, and boxes.
 - Godmode
 - Reticle
 - Infinite ammo
@@ -30,9 +30,14 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 - Saving and loading of settings.
 - Customizable hotkeys
 - Spamming - Currently dev only to prevent griefing.
+- Auto Win
+- Unlock All Doors
+- List Players - Give other players GodMode and Infinite Ammo.
+- Force Ready
 ---
 ## Known issues:
-- Changing resolutions while the cheat is injected will crash your game
+- Changing resolutions while the cheat is injected will crash your game.
+- Clicking Try Again after a mission causes an infinite loading state.
 ---
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
