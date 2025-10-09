@@ -134,10 +134,7 @@ WNDPROC oWndProc = nullptr;
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
 	if (ImGui::GetCurrentContext()) {
-		// Let ImGui handle input when menu is shown
-		if (ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam)) {
-			return true;
-		}
+		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 	}
 
 	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
@@ -722,7 +719,7 @@ DWORD MainThread(HMODULE hModule)
 			ShowMenu = !ShowMenu;
 			std::cout << "Menu: " << (ShowMenu ? "ON" : "OFF") << "\n";
 			ImGui::GetIO().MouseDrawCursor = ShowMenu;
-			ShowCursor(false);
+			ShowCursor(ShowMenu);
 		}
 
 		Sleep(100);

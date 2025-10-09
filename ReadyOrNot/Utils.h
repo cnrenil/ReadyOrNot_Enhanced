@@ -66,11 +66,13 @@ struct Utils
 	static float GetFOVFromScreenCoords(const ImVec2& ScreenLocation);
 	static ImVec2 FVector2DToImVec2(FVector2D Vector);
 	static FRotator GetRotationToTarget(const FVector& Start, const FVector& Target);
+	static FVector2D ImVec2ToFVector2D(ImVec2 Vector);
 };
 
 struct Variables
 {
 	APlayerController* PlayerController = nullptr;
+	FMinimalViewInfo* POV = nullptr;
 	APawn* Pawn = nullptr;
 	ACharacter* Character = nullptr;
 	AReadyOrNotCharacter* ReadyOrNotChar = nullptr;
@@ -93,6 +95,7 @@ struct Variables
 
 			// Clear all dependent variables if PlayerController is null
 			this->PlayerController = nullptr;
+			this->POV = nullptr;
 			this->Pawn = nullptr;
 			this->Character = nullptr;
 			this->ReadyOrNotChar = nullptr;
@@ -149,9 +152,19 @@ struct Variables
 		if (this->World && this->Level != this->World->PersistentLevel) {
 			this->Level = this->World->PersistentLevel;
 		}
+
+		// Update GameState
 		if (this->World && this->World->GameState && this->GameState != this->World->GameState && this->World->GameState->IsA(AReadyOrNotGameState::StaticClass())) 
 			this->GameState = static_cast<AReadyOrNotGameState*>(this->World->GameState);
-		
+
+		if (this->PlayerController && this->PlayerController->PlayerCameraManager) {
+			this->POV = &this->PlayerController->PlayerCameraManager->CameraCachePrivate.POV;
+		}
+		else {
+			this->POV = nullptr;
+		}
+
+		// Update Screen size
 		if (ImGui::GetCurrentContext())
 			ScreenSize = ImGui::GetIO().DisplaySize;
 	}

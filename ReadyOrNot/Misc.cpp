@@ -93,6 +93,14 @@ void Cheats::UpgradeWeaponStats()
 	Character->MeshspaceRecoilMovementMultiplier = FVector();
 	Character->RecoilSpeed = 0.0f;
 
+	Gun->CurrentAmmoType.HitsChance = 100;
+	Gun->CurrentAmmoType.PenetrationDistance = 100000;
+	Gun->CurrentAmmoType.PenetrationLevel = 10;
+	Gun->CurrentAmmoType.DismembermentDamage = 100000;
+	Gun->CurrentAmmoType.Damage = 10000;
+	Gun->CurrentAmmoType.RicochetChance = 0;
+	Gun->CurrentAmmoType.DurabilityDamage = 10000;
+
 	// Spread removal
 	Gun->SpreadPattern = FRotator();
 	Gun->PendingSpread = FRotator();
@@ -233,21 +241,22 @@ void Cheats::KillAll(ETeam Team)
 
 void Cheats::UpdateNoClip()
 {
-	if (!GVars.PlayerController) return;
-	if (!GVars.ReadyOrNotChar) return;
+	if (!GVars.ReadyOrNotChar || !GVars.PlayerController) return;
 	auto* RONC = GVars.ReadyOrNotChar;
 	auto* Character = reinterpret_cast<APlayerCharacter*>(RONC);
 	if (CVars.NoClip)
 	{
-		Character->ClientCheatFly();
-		Character->ClientCheatGhost();
-		Character->bVaulting = true;
-	}
-	else
-	{
-		Character->CapsuleComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		Character->CharacterMovement->SetMovementMode(EMovementMode::MOVE_Walking, 0);
-		Character->bVaulting = false;
+		GVars.PlayerController->EnableCheats();
+		if (GVars.PlayerController && GVars.PlayerController->CheatManager)
+			GVars.PlayerController->CheatManager->Fly();
+		if (Character->GetMovementComponent())
+			Character->GetMovementComponent()->MovementState.bCanFly = true;
+		if (Character->CharacterMovement)
+		{
+			Character->CharacterMovement->bCheatFlying = true;
+			std::cout << Character->CharacterMovement->IsFlying() << '\n';
+		}
+
 	}
 }
 
@@ -462,7 +471,7 @@ void Cheats::ChangeFOV()
 
 void Cheats::AutoWin()
 {
-	if (!GVars.GameState) return;
+	if (!GVars.GameState || !GVars.ReadyOrNotChar) return;
 
 	AReadyOrNotGameState* GameState = GVars.GameState;
 
@@ -473,13 +482,24 @@ void Cheats::AutoWin()
 		{
 			Evidence->EvidenceComponent->bEvidenceExtracted = true;
 			Evidence->EvidenceComponent->EvidenceState = EEvidenceActorState::Collected;
+			Evidence->OnEvidenceStateChanged(EEvidenceActorState::Collected);
 		}
 			
+	}
+	for (AReportableActor* Actor : GameState->AllReportableActors)
+	{
+		GVars.ReadyOrNotChar->Server_ReportToTOC(Actor, false ,false);
+		GVars.ReadyOrNotChar->Server_ReportTarget(Actor);
+		Actor->InteractableComponent->OnInteract(((APlayerCharacter*)GVars.ReadyOrNotChar));
 	}
 	for (AObjective* Objective : GameState->MissionObjectives)
 	{
 		if (!Objective) continue;
 		Objective->ObjectiveCompleted();
+		Objective->OnRep_ObjectiveStatus();
+		Objective->Multicast_UnlockObjective();
+		Objective->ObjectiveStatus = EObjectiveStatus::Objective_Complete;
+		Objective->OnRep_ObjectiveStatus();
 	}
 	ArrestAll(ETeam::TEAM_CIVILIAN);
 	ArrestAll(ETeam::TEAM_SUSPECT);
@@ -555,6 +575,12 @@ void Cheats::ListPlayers()
 					
 			}
 			ImGui::PopID();
+			ImGui::PushID((ID + "Teleport").c_str());
+			if (ImGui::Button("Teleport To Self"))
+			{
+				Player->Server_TeleportPlayerToLocation(GVars.ReadyOrNotChar->K2_GetActorLocation(), GVars.ReadyOrNotChar->K2_GetActorLocation());
+			}
+			ImGui::PopID();
 		}
 	}
 	ImGui::End();
@@ -569,7 +595,8 @@ void Cheats::ForceReady()
 
 	for (AReadyOrNotPlayerState* PlayerState : PlayerStates)
 	{
-		if (!Utils::IsValidActor(PlayerState))
+		if (!Utils::IsValidActor(PlayerState)) continue;
+
 		PlayerState->SetReady(true, PlayerState->LastLoadout);
 		PlayerState->Server_SetReady(true, PlayerState->LastLoadout);
 		PlayerState->bReady = true;

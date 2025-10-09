@@ -214,3 +214,8 @@ FRotator Utils::GetRotationToTarget(const FVector& Start, const FVector& Target)
 
     return Rotation;
 }
+
+FVector2D Utils::ImVec2ToFVector2D(ImVec2 Vector)
+{
+	return FVector2D(Vector.x, Vector.y);
+}
