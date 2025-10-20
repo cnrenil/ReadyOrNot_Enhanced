@@ -24,7 +24,6 @@ A simple RON cheat I made. Most injectors should work. I personally use Xenos, b
 - Silent Aim
 - Arrest all civs or suspects
 - Kill all civs or suspects
-- NoClip - Currently not working.
 - TriggerBot.
 - Secure All Evidence.
 - Saving and loading of settings.
