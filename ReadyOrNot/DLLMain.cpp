@@ -36,14 +36,9 @@ static const std::pair<const char*, std::string> BoneOptions[] = {
 	{"Right Hand", BoneList.RightHandBone}
 };
 
-static bool ESPEnabled = false;
-static bool AimbotEnabled = false;
-static bool AimbotLOS = true;
-static float AimbotFOV = 15.0f;
 static bool ShowMenu = true;
 static bool Cleaning = false;
 bool init = false;
-bool Debug = false;
 
 int Frames = 0;
 
@@ -148,12 +143,13 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 	GVars.AutoSetVariables();
 
-	if (Frames % 10 == 0) // Every 10 frames, ensure cheats are correctly applied
+	if (Frames % 30 == 0) // Every 30 frames, ensure cheats are correctly applied
 	{
-		if (GVars.ReadyOrNotChar && GVars.ReadyOrNotChar->GetEquippedWeapon())
+		AReadyOrNotCharacter* RONCT = GVars.ReadyOrNotChar;
+		if (GVars.PlayerController && RONCT && Utils::IsValidActor(RONCT) && RONCT->GetEquippedWeapon())
 		{
-			GVars.ReadyOrNotChar->bGodMode = CVars.GodMode;
-			GVars.ReadyOrNotChar->GetEquippedWeapon()->bInfiniteAmmo = CVars.InfAmmo;
+			RONCT->bGodMode = CVars.GodMode;
+			RONCT->GetEquippedWeapon()->bInfiniteAmmo = CVars.InfAmmo;
 		}
 	}
 
@@ -189,16 +185,16 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		MiscSettings.SpamText.reserve(512);
 	}
 
-	if (GVars.ScreenSize.x != ImGui::GetIO().DisplaySize.x || GVars.ScreenSize.y != ImGui::GetIO().DisplaySize.y)
-	{
-		GVars.ScreenSize = ImGui::GetIO().DisplaySize;
-	}
-
 	if (!oPresent)
 		return 0;
 
 	if (!ImGui::GetCurrentContext())
 		return oPresent(SwapChain, SyncInterval, Flags);
+
+	if (GVars.ScreenSize.x != ImGui::GetIO().DisplaySize.x || GVars.ScreenSize.y != ImGui::GetIO().DisplaySize.y)
+	{
+		GVars.ScreenSize = ImGui::GetIO().DisplaySize;
+	}
 
 	// Start the ImGui frame
 	ImGui_ImplDX11_NewFrame();
@@ -216,13 +212,13 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			if (ImGui::BeginTabItem("About"))
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
-				ImGui::Text("Version 1.9.0");
+				ImGui::Text("Version 2.0");
 				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
 				{
-					auto PlayerState = GVars.PlayerController->PlayerState;
-					auto PlayerName = PlayerState->GetPlayerName().ToString();
+					APlayerState* PlayerState = GVars.PlayerController->PlayerState;
+					std::string PlayerName = PlayerState->GetPlayerName().ToString();
 					ImGui::Text("Thank you for using my cheat %s!", PlayerName.c_str());
 				}
 				else
@@ -236,22 +232,20 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			if (ImGui::BeginTabItem("Player"))
 			{
 				if (ImGui::Checkbox("GodMode", &CVars.GodMode))
-				{
 					Cheats::ToggleGodMode();
-				}
 				HostOnlyTooltip();
 
 				ImGui::Checkbox("Aimbot", &CVars.Aimbot);
 
-				ImGui::Checkbox("ESP", &CVars.ESP);
-
-				ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 10);
-				ImGui::SameLine();
-				ImGui::Checkbox("Enable Speed", &CVars.SpeedEnabled);
-
 				ImGui::Checkbox("Silent Aim", &CVars.SilentAim);
 				AddDefaultTooltip("Not fully fleshed out so use with caution.");
 				HostOnlyTooltip();
+
+				ImGui::Checkbox("ESP", &CVars.ESP);
+
+				ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 30);
+				ImGui::SameLine();
+				ImGui::Checkbox("Enable Speed", &CVars.SpeedEnabled);
 
 				if (ImGui::SliderFloat("FOV", &CVars.FOV, 0.1f, 179.9f))
 				{
@@ -341,15 +335,10 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 				}
 				AddDefaultTooltip("These only save and load the configs not which cheats are enabled.");
 
-				if (ImGui::Button("Force Ready"))
-				{
-					Cheats::ForceReady();
-				}
-
-				ImGui::Checkbox("Debug", &Debug);
+				ImGui::Checkbox("Debug", &CVars.Debug);
 				AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
 
-				if (Debug)
+				if (CVars.Debug)
 				{
 					if (ImGui::Button("Print Actors"))
 					{
@@ -374,7 +363,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::Checkbox("Target Arrested", &AimbotSettings.TargetArrested);
 
-					ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 10000);
+					ImGui::Checkbox("Target All", &AimbotSettings.TargetAll);
+
+					ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 100);
 
 					ImGui::Checkbox("Smoothing", &AimbotSettings.Smooth);
 
@@ -458,7 +449,51 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 					ImGui::TreePop();
 				}
 
-				if (ImGui::TreeNode("Misc"))
+				if (ImGui::TreeNode("Silent Aim Settings"))
+				{
+					ImGui::Checkbox("Target Civilians", &SilentAimSettings.TargetCivilians);
+
+					ImGui::Checkbox("Target All", &SilentAimSettings.TargetAll);
+
+					ImGui::Checkbox("Target Dead", &SilentAimSettings.TargetDead);
+
+					ImGui::Checkbox("Target Surrendered", &SilentAimSettings.TargetSurrendered);
+
+					ImGui::Checkbox("Target Arrested", &SilentAimSettings.TargetArrested);
+
+					ImGui::SliderFloat("Silent Aim FOV", &SilentAimSettings.MaxFOV, 0.01f, 180.0f);
+
+					ImGui::Checkbox("Draw FOV", &SilentAimSettings.DrawFOV);
+
+					ImGui::SliderFloat("FOV Line Thickness", &SilentAimSettings.FOVThickness, 0.5f, 10.0f);
+
+					ImGui::Checkbox("Draw Snap line", &SilentAimSettings.DrawArrow);
+
+					ImGui::SliderFloat("Snap Line Thickness", &SilentAimSettings.ArrowThickness, 0.5f, 10.0f);
+
+					ImGui::Checkbox("Require LOS", &SilentAimSettings.RequiresLOS);
+
+					ImGui::SliderFloat("Hit Chance", &SilentAimSettings.HitChance, 0.0f, 100);
+
+					if (ImGui::BeginCombo("Target Bone", SilentAimSettings.TargetBone.c_str()))
+					{
+						for (int i = 0; i < IM_ARRAYSIZE(BoneOptions); i++)
+						{
+							bool is_selected = (SilentAimSettings.TargetBone == BoneOptions[i].second);
+							if (ImGui::Selectable(BoneOptions[i].first, is_selected))
+							{
+								SilentAimSettings.TargetBone = BoneOptions[i].second;
+							}
+							if (is_selected)
+								ImGui::SetItemDefaultFocus(); // make the selected item visible
+						}
+						ImGui::EndCombo();
+					}
+
+					ImGui::TreePop();
+				}
+
+				if (ImGui::TreeNode("Misc Settings"))
 				{
 					ImGui::SeparatorText("Reticle Settings");
 
@@ -469,6 +504,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 					ImGui::DragFloat2("Reticle Position", (float*)&MiscSettings.ReticlePosition, 1, -100, 100);
 
 					ImGui::SliderFloat("Reticle Size", &MiscSettings.ReticleSize, 1, 15);
+
+					ImGui::Checkbox("Use a Cross Reticle", &MiscSettings.CrossReticle);
 
 					ImGui::Checkbox("Only Show Reticle while Throwing a Grenade", &MiscSettings.ReticleWhenThrowing);
 
@@ -579,6 +616,12 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			ImGui::EndTabBar();
 		}
 
+		ImGui::Separator();
+
+		ImGui::Text("This cheat will most likely not be getting any more features as I have moved on but it will still get bug fixes and offset updates.");
+
+		ImGui::Text("You can find me on Discord, UnknownCheats.me, and GitHub under Peachmarrow12 or Peachmarrow13.");
+
 		ImGui::End();
 	}
 
@@ -586,6 +629,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	{
 		AimbotKeyDown = ImGui::IsKeyDown(AimbotSettings.AimbotKey);
 	}
+	else
+		AimbotKeyDown = true;
 
 	if (CVars.RenderOptions)
 		Cheats::RenderEnabledOptions();
@@ -753,7 +798,7 @@ void HookSwapChain()
 	sd.BufferCount = 1;
 	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.OutputWindow = FindWindow(L"UnrealWindow", nullptr); //! Fix: Add Window Name to prevent having two windows with same class causing issues
+	sd.OutputWindow = FindWindow(L"UnrealWindow", nullptr); //! Fix: Add Window Name to prevent having two windows with same class causing issues; Never mind I am too lazy
 	sd.SampleDesc.Count = 1;
 	sd.SampleDesc.Quality = 0;
 	sd.Windowed = TRUE;
@@ -820,6 +865,23 @@ void SaveSettings()
 	file << AimbotSettings.RequireKeyHeld << '\n';
 	file << ESPSettings.ShowTraps << '\n';
 	file << ((int&)AimbotSettings.AimbotKey) << '\n';
+	file << SilentAimSettings.TargetCivilians << '\n';
+	file << SilentAimSettings.TargetAll << '\n';
+	file << SilentAimSettings.TargetDead << '\n';
+	file << SilentAimSettings.TargetSurrendered << '\n';
+	file << SilentAimSettings.TargetArrested << '\n';
+	file << SilentAimSettings.MaxFOV << '\n';
+	file << SilentAimSettings.DrawFOV << '\n';
+	file << SilentAimSettings.FOVThickness << '\n';
+	file << SilentAimSettings.DrawArrow << '\n';
+	file << SilentAimSettings.ArrowThickness << '\n';
+	file << SilentAimSettings.RequiresLOS << '\n';
+	file << SilentAimSettings.HitChance << '\n';
+	file << SilentAimSettings.TargetBone << '\n';
+	file << MiscSettings.TriggerBotTargetsCivilians << '\n';
+	file << MiscSettings.TriggerBotUsesSilentAim << '\n';
+	file << MiscSettings.CrossReticle << '\n';
+	file << MiscSettings.ReticleWhenThrowing << '\n';
 
 	file.close();
 }
@@ -865,6 +927,23 @@ void LoadSettings()
 	infile >> AimbotSettings.RequireKeyHeld;
 	infile >> ESPSettings.ShowTraps;
 	infile >> ((int&)AimbotSettings.AimbotKey);
+	infile >> SilentAimSettings.TargetCivilians;
+	infile >> SilentAimSettings.TargetAll;
+	infile >> SilentAimSettings.TargetDead;
+	infile >> SilentAimSettings.TargetSurrendered;
+	infile >> SilentAimSettings.TargetArrested;
+	infile >> SilentAimSettings.MaxFOV;
+	infile >> SilentAimSettings.DrawFOV;
+	infile >> SilentAimSettings.FOVThickness;
+	infile >> SilentAimSettings.DrawArrow;
+	infile >> SilentAimSettings.ArrowThickness;
+	infile >> SilentAimSettings.RequiresLOS;
+	infile >> SilentAimSettings.HitChance;
+	infile >> SilentAimSettings.TargetBone;
+	infile >> MiscSettings.TriggerBotTargetsCivilians;
+	infile >> MiscSettings.TriggerBotUsesSilentAim;
+	infile >> MiscSettings.CrossReticle;
+	infile >> MiscSettings.ReticleWhenThrowing;
 
 	infile.close();
 }

@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 #include <numbers>
+
+#include "Cheats.h"
 #include "SDK/Engine_classes.hpp"
 
 using namespace SDK;
@@ -100,57 +102,6 @@ FRotator Utils::VectorToRotation(const FVector& Vec)
     return Rot;
 }
 
-AReadyOrNotCharacter* Utils::GetBestTarget(float AngleWeight, float MaxFOV, bool TargetCivilians)
-{
-    if (!GVars.PlayerController || !GVars.ReadyOrNotChar || !GVars.Level)
-        return nullptr;
-
-    FVector PlayerPos;
-    FRotator PlayerRot;
-    GVars.PlayerController->GetPlayerViewPoint(&PlayerPos, &PlayerRot);
-    FVector Forward = ForwardFromRot(PlayerRot);
-
-    float BestScore = 999999.f;
-    AReadyOrNotCharacter* BestTarget = nullptr;
-
-    for (AActor* Actor : GVars.Level->Actors)
-    {
-        if (!Utils::IsValidActor(Actor)) continue;
-
-        if (!Actor || Actor == GVars.ReadyOrNotChar) continue;
-
-        if (!Actor->IsA(ASuspectCharacter::StaticClass()) &&
-            !(TargetCivilians && Actor->IsA(ACivilianCharacter::StaticClass())))
-            continue;
-
-        auto* Target = (AReadyOrNotCharacter*)Actor;
-
-        if (Target->IsDeadOrUnconscious() || Target->IsArrestedOrSurrendered()) continue;
-
-        FVector TargetPos;
-        Target->GetActorEyesViewPoint(&TargetPos, nullptr);
-
-        FVector Dir = Normalize(TargetPos - PlayerPos);
-        float Dot = Dot3(Forward, Dir);
-        float Angle = AngleDegFromDot(Dot);
-
-        float Dist = Length3(TargetPos - PlayerPos);
-
-        if (Angle > MaxFOV) continue;
-
-        // score = weighted sum: prioritize angle first, then distance
-        float Score = Angle * AngleWeight + Dist; 
-
-        if (Score < BestScore)
-        {
-            BestScore = Score;
-            BestTarget = Target;
-        }
-    }
-
-    return BestTarget;
-}
-
 FVector Utils::FRotatorToVector(const FRotator& Rot)
 {
     double PitchRad = Rot.Pitch * (std::numbers::pi / 180.0);
@@ -171,7 +122,6 @@ FVector Utils::FRotatorToVector(const FRotator& Rot)
 // Helper function to get or create player cheat data
 PlayerCheatData& Utils::GetPlayerCheats(APlayerCharacter* Player)
 {
-    // If player doesn't exist in map, this creates a default entry
     return PlayerCheatMap[Player];
 }
 
@@ -179,11 +129,18 @@ bool Utils::IsValidActor(AActor* Actor)
 {
     if (!Actor) return false;
 
-	if (!Actor->VTable) return false; // additional check
+    if (!UKismetSystemLibrary::IsValid(Actor)) return false;
+
+    if (!Actor->Class) return false;
+
+    if (!Actor->GetLevel()) return false;
+
+    if (Actor->IsActorBeingDestroyed()) return false;
+
+	if (!Actor->VTable) return false;
 
 	if (Actor->bActorIsBeingDestroyed) return false;
 
-    if (Actor->IsActorBeingDestroyed()) return false;
     return true;
 }
 
@@ -218,4 +175,132 @@ FRotator Utils::GetRotationToTarget(const FVector& Start, const FVector& Target)
 FVector2D Utils::ImVec2ToFVector2D(ImVec2 Vector)
 {
 	return FVector2D(Vector.x, Vector.y);
+}
+
+AActor* Utils::GetBestTarget(bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll)
+{
+    if (!GVars.World || !GVars.Level || !GVars.ReadyOrNotChar || !GVars.PlayerController) return nullptr;
+
+    std::wstring WideString = UtfN::StringToWString(TargetBone);
+    FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
+
+    AActor* BestTarget = nullptr;
+    float BestFOV = MaxFOV;
+
+    for (AActor* Actor : GVars.Level->Actors)
+    {
+        if (!Actor || !Utils::IsValidActor(Actor))
+            continue;
+
+        AReadyOrNotCharacter* ReadyOrNotChar;
+
+        if (Actor->IsA(AReadyOrNotCharacter::StaticClass()))
+        {
+            ReadyOrNotChar = reinterpret_cast<AReadyOrNotCharacter*>(Actor);
+            if (!ReadyOrNotChar)
+                continue;
+            if (!TargetAll)
+            {
+	            bool bIsCivilian = ReadyOrNotChar->IsCivilian();
+            	bool bIsSuspect = ReadyOrNotChar->IsSuspect();
+
+            	// Keep target if suspect OR (civilian AND TargetCivs)
+            	if (!(bIsSuspect || (bIsCivilian && TargetCivs)))
+            		continue;
+            }
+        }
+        else
+            continue;
+
+        if (!ReadyOrNotChar)
+            continue;
+        if (!TargetDead && (ReadyOrNotChar->IsDeadOrUnconscious() || ReadyOrNotChar->IsIncapacitated()))
+            continue;
+        if (!TargetArrested && ReadyOrNotChar->IsArrested())
+            continue;
+        if (!TargetSurrendered && ReadyOrNotChar->IsSurrendered())
+            continue;
+
+        // Get the target bone location
+        FVector BoneLocation = ReadyOrNotChar->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
+
+        if (RequiresLOS)
+        {
+            FVector Start = GVars.POV->Location;
+            FVector End = BoneLocation;
+
+            TArray<AActor*> IgnoreActors;
+            IgnoreActors.Add(GVars.ReadyOrNotChar);
+
+            FHitResult HitResult;
+            bool bHit = UKismetSystemLibrary::LineTraceSingle(
+                GVars.World,
+                Start,
+                End,
+                ETraceTypeQuery::TraceTypeQuery1,
+                true,
+                IgnoreActors,
+                EDrawDebugTrace::None,
+                &HitResult,
+                true,
+                FLinearColor(),
+                FLinearColor(),
+                1.0f
+            );
+
+            AActor* HitActor = nullptr;
+            HitActor = HitResult.Component->GetOwner();
+
+            bool bHasLOS = !HitResult.bBlockingHit || HitActor == ReadyOrNotChar;
+            if (!bHasLOS)
+                continue;
+        }
+
+        FVector2D ScreenLocation;
+        if (!GVars.PlayerController->ProjectWorldLocationToScreen(BoneLocation, &ScreenLocation, true))
+            continue;
+
+        FVector2D ViewportSize = Utils::ImVec2ToFVector2D(GVars.ScreenSize);
+        FVector2D ViewportCenter = ViewportSize / 2.0;
+        FVector2D Delta = ScreenLocation - ViewportCenter;
+
+        // Compute length manually
+        float DeltaLength = std::sqrt(Delta.X * Delta.X + Delta.Y * Delta.Y);
+
+        // Normalize by half the screen height
+        float NormalizedOffset = DeltaLength / (ViewportSize.Y * 0.5f);
+        float MaxFOVNormalized = MaxFOV / 90.0f;
+        float FOV = NormalizedOffset * 90.0f;
+        if (NormalizedOffset < MaxFOVNormalized && FOV < BestFOV)
+        {
+            BestFOV = FOV;
+            BestTarget = Actor;
+        }
+    }
+    if (BestTarget)
+        return BestTarget;
+    return nullptr;
+}
+
+void Utils::DrawFOV(float MaxFOV, float Thickness = 1.0f)
+{
+    FVector2D ViewportSize = Utils::ImVec2ToFVector2D(GVars.ScreenSize);
+    FVector2D Center = ViewportSize * 0.5f;
+
+    float MaxFOVNormalized = MaxFOV / 90.0f;
+    float RadiusPixels = MaxFOVNormalized * (ViewportSize.Y * 0.5f);
+
+    // Draw using ImGui (pixel radius)
+    ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(Center.X, Center.Y), RadiusPixels, IM_COL32(255, 0, 0, 255), 64, Thickness);
+}
+
+void Utils::DrawSnapLine(FVector TargetPos, float Thickness = 2.0f)
+{
+    FVector2D ScreenPos;
+
+    if (!GVars.PlayerController->ProjectWorldLocationToScreen(TargetPos, &ScreenPos, true))
+        return;
+
+    ImGui::GetBackgroundDrawList()->AddLine(ImVec2(GVars.ScreenSize.x / 2, GVars.ScreenSize.y / 2), ImVec2(ScreenPos.X, ScreenPos.Y), IM_COL32(255, 255, 255, 255), Thickness);
+    ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenPos.X, ScreenPos.Y), 2.0f, IM_COL32(0, 255, 0, 255));
 }

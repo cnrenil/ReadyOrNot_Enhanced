@@ -78,6 +78,9 @@
     <ClCompile Include="ImGui\misc\cpp\imgui_stdlib.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="SilentAim.cpp">
+      <Filter>Source Files\Cheats</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SDK\Engine_classes.hpp">

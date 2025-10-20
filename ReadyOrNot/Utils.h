@@ -52,6 +52,18 @@ inline void HostOnlyTooltip()
 	}
 }
 
+inline float GetDistance(AActor* Actor, FVector AActorLocation)
+{
+	if (!Actor || !Actor->RootComponent)
+		return -1.0f;
+	const auto RootComponent = Actor->RootComponent;
+	auto deltaX = (float)(RootComponent->RelativeLocation.X - AActorLocation.X);
+	auto deltaY = (float)(RootComponent->RelativeLocation.Y - AActorLocation.Y);
+	auto deltaZ = (float)(RootComponent->RelativeLocation.Z - AActorLocation.Z);
+
+	return (float)std::sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+}
+
 struct Utils
 {
 	static UWorld* GetWorldSafe(); // can return nullptr
@@ -59,7 +71,9 @@ struct Utils
 	static unsigned ConvertImVec4toU32(ImVec4 Color);
 	static void PrintActors(const char* Exclude);
 	static FRotator VectorToRotation(const FVector& Vec);
-	static AReadyOrNotCharacter* GetBestTarget(float AngleWeight, float MaxFOV, bool TargetCivilians);
+	static AActor* GetBestTarget(bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll);
+	static void DrawFOV(float MaxFOV, float Thickness);
+	static void DrawSnapLine(FVector TargetPos, float Thickness);
 	static FVector FRotatorToVector(const FRotator& Rot);
 	static PlayerCheatData& GetPlayerCheats(APlayerCharacter* Player);
 	static bool IsValidActor(AActor* Actor);
