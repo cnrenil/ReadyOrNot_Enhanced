@@ -169,8 +169,7 @@ public:
 	uint8                                         Pad_ED[0x3];                                       // 0x00ED(0x0003)(Fixing Size After Last Property [ Dumper-7 ])
 	class USlateAccessibleWidgetData*             AccessibleWidgetData;                              // 0x00F0(0x0008)(ExportObject, ZeroConstructor, InstancedReference, NoDestructor, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
 	class UWidgetNavigation*                      Navigation;                                        // 0x00F8(0x0008)(Edit, BlueprintVisible, ExportObject, BlueprintReadOnly, ZeroConstructor, InstancedReference, NoDestructor, PersistentInstance, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	bool                                          bSetFocusNextTick;                                 // 0x0100(0x0001)(Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8                                         Pad_101[0x57];                                     // 0x0101(0x0057)(Fixing Size After Last Property [ Dumper-7 ])
+	uint8                                         Pad_100[0x58];                                     // 0x0100(0x0058)(Fixing Size After Last Property [ Dumper-7 ])
 	TArray<class UPropertyBinding*>               NativeBindings;                                    // 0x0158(0x0010)(ZeroConstructor, Transient, Protected, UObjectWrapper, NativeAccessSpecifierProtected)
 	uint8                                         Pad_168[0x20];                                     // 0x0168(0x0020)(Fixing Struct Size After Last Property [ Dumper-7 ])
 
@@ -187,8 +186,6 @@ public:
 	void SetClipping(EWidgetClipping InClipping);
 	void SetCursor(EMouseCursor InCursor);
 	void SetFocus();
-	void SetFocusInstant();
-	void SetFocusNextTick();
 	void SetIsEnabled(bool bInIsEnabled);
 	void SetKeyboardFocus();
 	void SetNavigationRule(EUINavigation Direction, EUINavigationRule Rule, class FName WidgetToFocus);
@@ -203,7 +200,6 @@ public:
 	void SetRenderTransformAngle(float Angle);
 	void SetRenderTransformPivot(const struct FVector2D& Pivot);
 	void SetRenderTranslation(const struct FVector2D& Translation);
-	void SetSupportsDelayedFocus(bool bInEnabled, bool bPropagateToChildren);
 	void SetToolTip(class UWidget* Widget);
 	void SetToolTipText(const class FText& InToolTipText);
 	void SetUserFocus(class APlayerController* PlayerController);
@@ -278,8 +274,7 @@ public:
 	class UWidgetTree*                            WidgetTree;                                        // 0x0260(0x0008)(ZeroConstructor, Transient, DuplicateTransient, NoDestructor, TextExportTransient, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         bHasScriptImplementedTick : 1;                     // 0x0268(0x0001)(BitIndex: 0x00, PropSize: 0x0001 (NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic))
 	uint8                                         bHasScriptImplementedPaint : 1;                    // 0x0268(0x0001)(BitIndex: 0x01, PropSize: 0x0001 (NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic))
-	bool                                          bPropagateFocusNextTickToChildren;                 // 0x0269(0x0001)(Edit, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8                                         Pad_26A[0x16];                                     // 0x026A(0x0016)(Fixing Size After Last Property [ Dumper-7 ])
+	uint8                                         Pad_269[0x17];                                     // 0x0269(0x0017)(Fixing Size After Last Property [ Dumper-7 ])
 	EWidgetTickFrequency                          TickFrequency;                                     // 0x0280(0x0001)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
 	uint8                                         Pad_281[0x3];                                      // 0x0281(0x0003)(Fixing Size After Last Property [ Dumper-7 ])
 	struct FWidgetChild                           DesiredFocusWidget;                                // 0x0284(0x0010)(Edit, DisableEditOnInstance, NoDestructor, ContainsInstancedReference, NativeAccessSpecifierPrivate)

@@ -21,8 +21,8 @@ namespace SDK
 class UBF_Triangulate_C final : public UBlueprintFunctionLibrary
 {
 public:
-	static void RecursiveTriangulate(TArray<struct FST_VertexID>& vert, TArray<struct FST_VertexID>& FullSetVert, TArray<struct FST_LineSegment>& BuiltSeg, int32 Thread, class UObject* __WorldContext, TArray<int32>* Triangles);
 	static void TriangulatePolygon(TArray<struct FVector>& Vertices, class UObject* __WorldContext, TArray<int32>* Triangles);
+	static void RecursiveTriangulate(TArray<struct FST_VertexID>& vert, TArray<struct FST_VertexID>& FullSetVert, TArray<struct FST_LineSegment>& BuiltSeg, int32 Thread, class UObject* __WorldContext, TArray<int32>* Triangles);
 	static bool PointInTriangle(const struct FVector2D& P, const struct FVector2D& A, const struct FVector2D& B, const struct FVector2D& C, bool IgnoreSide, class UObject* __WorldContext);
 	static void LoopArrayIndex(int32 Index_0, int32 Shift, int32 ArrayLength, class UObject* __WorldContext, int32* Return);
 	static void LineSegIntersectionTest(const struct FVector2D& a1, const struct FVector2D& b1, const struct FVector2D& a2, const struct FVector2D& b2, bool IgnoreSide, class UObject* __WorldContext, bool* Return);

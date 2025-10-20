@@ -151,27 +151,15 @@ enum class EModioUIFeatureFlags : uint8
 	EModioUIFeatureFlags_MAX                 = 3,
 };
 
-// ScriptStruct ModioUICore.ModioTextValidationRule
-// 0x0028 (0x0028 - 0x0000)
-struct FModioTextValidationRule final
+// ScriptStruct ModioUICore.ModioUICommandAssetEntry
+// 0x00A0 (0x00A8 - 0x0008)
+struct FModioUICommandAssetEntry final : public FTableRowBase
 {
 public:
-	EModioTextValidationRule                      RuleToUse;                                         // 0x0000(0x0001)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
-	class FText                                   ValidationMessage;                                 // 0x0008(0x0018)(Edit, BlueprintVisible, NativeAccessSpecifierPublic)
-	int32                                         MinimumLength;                                     // 0x0020(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	int32                                         MaximumLength;                                     // 0x0024(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	TMap<class FName, class FText>                CommandTexts;                                      // 0x0008(0x0050)(Edit, BlueprintVisible, BlueprintReadOnly, NativeAccessSpecifierPublic)
+	TMap<class FName, struct FSlateBrush>         CommandIconBrushes;                                // 0x0058(0x0050)(Edit, BlueprintVisible, BlueprintReadOnly, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_FModioTextValidationRule;
-
-// ScriptStruct ModioUICore.ModioStackedBool
-// 0x0010 (0x0010 - 0x0000)
-struct FModioStackedBool final
-{
-public:
-	TArray<bool>                                  ValueStack;                                        // 0x0000(0x0010)(ZeroConstructor, NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_FModioStackedBool;
+DUMPER7_ASSERTS_FModioUICommandAssetEntry;
 
 // ScriptStruct ModioUICore.ModioDefaultCodeInputTextBoxStyle
 // 0x02B0 (0x05F0 - 0x0340)
@@ -192,15 +180,18 @@ public:
 };
 DUMPER7_ASSERTS_FModioDefaultCodeInputTextBoxStyle;
 
-// ScriptStruct ModioUICore.ModioUICommandAssetEntry
-// 0x00A0 (0x00A8 - 0x0008)
-struct FModioUICommandAssetEntry final : public FTableRowBase
+// ScriptStruct ModioUICore.ModioTextValidationRule
+// 0x0028 (0x0028 - 0x0000)
+struct FModioTextValidationRule final
 {
 public:
-	TMap<class FName, class FText>                CommandTexts;                                      // 0x0008(0x0050)(Edit, BlueprintVisible, BlueprintReadOnly, NativeAccessSpecifierPublic)
-	TMap<class FName, struct FSlateBrush>         CommandIconBrushes;                                // 0x0058(0x0050)(Edit, BlueprintVisible, BlueprintReadOnly, NativeAccessSpecifierPublic)
+	EModioTextValidationRule                      RuleToUse;                                         // 0x0000(0x0001)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
+	class FText                                   ValidationMessage;                                 // 0x0008(0x0018)(Edit, BlueprintVisible, NativeAccessSpecifierPublic)
+	int32                                         MinimumLength;                                     // 0x0020(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	int32                                         MaximumLength;                                     // 0x0024(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_FModioUICommandAssetEntry;
+DUMPER7_ASSERTS_FModioTextValidationRule;
 
 // ScriptStruct ModioUICore.ModioUIColorEntry
 // 0x0010 (0x0018 - 0x0008)
@@ -380,6 +371,15 @@ public:
 	int32                                         RetriesRemaining;                                  // 0x0000(0x0004)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, Transient, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash, NativeAccessSpecifierProtected)
 };
 DUMPER7_ASSERTS_FModioRetryCounter;
+
+// ScriptStruct ModioUICore.ModioStackedBool
+// 0x0010 (0x0010 - 0x0000)
+struct FModioStackedBool final
+{
+public:
+	TArray<bool>                                  ValueStack;                                        // 0x0000(0x0010)(ZeroConstructor, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_FModioStackedBool;
 
 // ScriptStruct ModioUICore.ModioUIComponentMetadata
 // 0x0020 (0x0020 - 0x0000)

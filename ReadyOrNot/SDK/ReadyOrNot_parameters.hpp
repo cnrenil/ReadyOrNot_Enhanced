@@ -15984,122 +15984,122 @@ public:
 };
 DUMPER7_ASSERTS_MenuWidget_PlayWidgetAnimation_Internal;
 
-// Function ReadyOrNot.PreMissionPlanning.GetPremissionPlanning
+// Function ReadyOrNot.PremissionPlanning.GetPremissionPlanning
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_GetPremissionPlanning final
+struct PremissionPlanning_GetPremissionPlanning final
 {
 public:
-	class UPreMissionPlanning*                    ReturnValue;                                       // 0x0000(0x0008)(ExportObject, Parm, OutParm, ZeroConstructor, ReturnParm, InstancedReference, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	class UPremissionPlanning*                    ReturnValue;                                       // 0x0000(0x0008)(ExportObject, Parm, OutParm, ZeroConstructor, ReturnParm, InstancedReference, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetPremissionPlanning;
+DUMPER7_ASSERTS_PremissionPlanning_GetPremissionPlanning;
 
-// Function ReadyOrNot.PreMissionPlanning.AttachPrimaryToSocket
+// Function ReadyOrNot.PremissionPlanning.AttachPrimaryToSocket
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_AttachPrimaryToSocket final
-{
-public:
-	class FName                                   Socket;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_PreMissionPlanning_AttachPrimaryToSocket;
-
-// Function ReadyOrNot.PreMissionPlanning.AttachSecondaryToSocket
-// 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_AttachSecondaryToSocket final
+struct PremissionPlanning_AttachPrimaryToSocket final
 {
 public:
 	class FName                                   Socket;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_AttachSecondaryToSocket;
+DUMPER7_ASSERTS_PremissionPlanning_AttachPrimaryToSocket;
 
-// Function ReadyOrNot.PreMissionPlanning.ClearPreviewWeaponSkin
+// Function ReadyOrNot.PremissionPlanning.AttachSecondaryToSocket
+// 0x0008 (0x0008 - 0x0000)
+struct PremissionPlanning_AttachSecondaryToSocket final
+{
+public:
+	class FName                                   Socket;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_PremissionPlanning_AttachSecondaryToSocket;
+
+// Function ReadyOrNot.PremissionPlanning.ClearPreviewWeaponSkin
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_ClearPreviewWeaponSkin final
+struct PremissionPlanning_ClearPreviewWeaponSkin final
 {
 public:
 	bool                                          IsSecondary;                                       // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_ClearPreviewWeaponSkin;
+DUMPER7_ASSERTS_PremissionPlanning_ClearPreviewWeaponSkin;
 
-// Function ReadyOrNot.PreMissionPlanning.DoSaveLoadout
+// Function ReadyOrNot.PremissionPlanning.DoSaveLoadout
 // 0x02F0 (0x02F0 - 0x0000)
-struct PreMissionPlanning_DoSaveLoadout final
+struct PremissionPlanning_DoSaveLoadout final
 {
 public:
 	EEquippingSwat                                SwatMember;                                        // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	struct FSavedLoadout                          Loadout;                                           // 0x0008(0x02E8)(Parm, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_DoSaveLoadout;
+DUMPER7_ASSERTS_PremissionPlanning_DoSaveLoadout;
 
-// Function ReadyOrNot.PreMissionPlanning.GetAvailablePlayerSkins
+// Function ReadyOrNot.PremissionPlanning.GetAvailablePlayerSkins
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_GetAvailablePlayerSkins final
+struct PremissionPlanning_GetAvailablePlayerSkins final
 {
 public:
 	TArray<TSubclassOf<class USkinComponent>>     ReturnValue;                                       // 0x0000(0x0010)(Parm, OutParm, ZeroConstructor, ReturnParm, UObjectWrapper, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetAvailablePlayerSkins;
+DUMPER7_ASSERTS_PremissionPlanning_GetAvailablePlayerSkins;
 
-// Function ReadyOrNot.PreMissionPlanning.GetDefaultPreviewCharacter
+// Function ReadyOrNot.PremissionPlanning.GetDefaultPreviewCharacter
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_GetDefaultPreviewCharacter final
+struct PremissionPlanning_GetDefaultPreviewCharacter final
 {
 public:
 	class AReadyOrNotCharacter*                   ReturnValue;                                       // 0x0000(0x0008)(Parm, OutParm, ZeroConstructor, ReturnParm, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetDefaultPreviewCharacter;
+DUMPER7_ASSERTS_PremissionPlanning_GetDefaultPreviewCharacter;
 
-// Function ReadyOrNot.PreMissionPlanning.GetEquippingSwatMember
+// Function ReadyOrNot.PremissionPlanning.GetEquippingSwatMember
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_GetEquippingSwatMember final
+struct PremissionPlanning_GetEquippingSwatMember final
 {
 public:
 	EEquippingSwat                                EquippingSwat;                                     // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetEquippingSwatMember;
+DUMPER7_ASSERTS_PremissionPlanning_GetEquippingSwatMember;
 
-// Function ReadyOrNot.PreMissionPlanning.GetInputLocked
+// Function ReadyOrNot.PremissionPlanning.GetInputLocked
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_GetInputLocked final
+struct PremissionPlanning_GetInputLocked final
 {
 public:
 	bool                                          ReturnValue;                                       // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetInputLocked;
+DUMPER7_ASSERTS_PremissionPlanning_GetInputLocked;
 
-// Function ReadyOrNot.PreMissionPlanning.GetItemAttachmentData
+// Function ReadyOrNot.PremissionPlanning.GetItemAttachmentData
 // 0x0060 (0x0060 - 0x0000)
-struct PreMissionPlanning_GetItemAttachmentData final
+struct PremissionPlanning_GetItemAttachmentData final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Weapon;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	struct FSavedWeaponAttachmentData             ReturnValue;                                       // 0x0008(0x0058)(Parm, OutParm, ReturnParm, NoDestructor, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetItemAttachmentData;
+DUMPER7_ASSERTS_PremissionPlanning_GetItemAttachmentData;
 
-// Function ReadyOrNot.PreMissionPlanning.GetLastItemInSlot
+// Function ReadyOrNot.PremissionPlanning.GetLastItemInSlot
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_GetLastItemInSlot final
+struct PremissionPlanning_GetLastItemInSlot final
 {
 public:
 	EItemType                                     ItemType;                                          // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	TSubclassOf<class ABaseItem>                  ReturnValue;                                       // 0x0008(0x0008)(Parm, OutParm, ZeroConstructor, ReturnParm, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetLastItemInSlot;
+DUMPER7_ASSERTS_PremissionPlanning_GetLastItemInSlot;
 
-// Function ReadyOrNot.PreMissionPlanning.GetSubcategory
+// Function ReadyOrNot.PremissionPlanning.GetSubcategory
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_GetSubcategory final
+struct PremissionPlanning_GetSubcategory final
 {
 public:
 	EPreMissionSubCategory                        ReturnValue;                                       // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetSubcategory;
+DUMPER7_ASSERTS_PremissionPlanning_GetSubcategory;
 
-// Function ReadyOrNot.PreMissionPlanning.GetWeaponPresetData
+// Function ReadyOrNot.PremissionPlanning.GetWeaponPresetData
 // 0x0078 (0x0078 - 0x0000)
-struct PreMissionPlanning_GetWeaponPresetData final
+struct PremissionPlanning_GetWeaponPresetData final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Weapon;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -16107,39 +16107,39 @@ public:
 	uint8                                         Pad_C[0x4];                                        // 0x000C(0x0004)(Fixing Size After Last Property [ Dumper-7 ])
 	struct FWeaponPreset                          ReturnValue;                                       // 0x0010(0x0068)(Parm, OutParm, ReturnParm, NoDestructor, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetWeaponPresetData;
+DUMPER7_ASSERTS_PremissionPlanning_GetWeaponPresetData;
 
-// Function ReadyOrNot.PreMissionPlanning.GetWeaponPresetsData
+// Function ReadyOrNot.PremissionPlanning.GetWeaponPresetsData
 // 0x0018 (0x0018 - 0x0000)
-struct PreMissionPlanning_GetWeaponPresetsData final
+struct PremissionPlanning_GetWeaponPresetsData final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Weapon;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	struct FSavedWeaponPreset                     ReturnValue;                                       // 0x0008(0x0010)(Parm, OutParm, ReturnParm, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_GetWeaponPresetsData;
+DUMPER7_ASSERTS_PremissionPlanning_GetWeaponPresetsData;
 
-// Function ReadyOrNot.PreMissionPlanning.HidePrimary
+// Function ReadyOrNot.PremissionPlanning.HidePrimary
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_HidePrimary final
+struct PremissionPlanning_HidePrimary final
 {
 public:
 	bool                                          bIsHidden;                                         // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_HidePrimary;
+DUMPER7_ASSERTS_PremissionPlanning_HidePrimary;
 
-// Function ReadyOrNot.PreMissionPlanning.HideSecondary
+// Function ReadyOrNot.PremissionPlanning.HideSecondary
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_HideSecondary final
+struct PremissionPlanning_HideSecondary final
 {
 public:
 	bool                                          bIsHidden;                                         // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_HideSecondary;
+DUMPER7_ASSERTS_PremissionPlanning_HideSecondary;
 
-// Function ReadyOrNot.PreMissionPlanning.HideWeapons
+// Function ReadyOrNot.PremissionPlanning.HideWeapons
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_HideWeapons final
+struct PremissionPlanning_HideWeapons final
 {
 public:
 	bool                                          bHidePrimary;                                      // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -16147,409 +16147,409 @@ public:
 	uint8                                         Pad_2[0x2];                                        // 0x0002(0x0002)(Fixing Size After Last Property [ Dumper-7 ])
 	float                                         Delay;                                             // 0x0004(0x0004)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_HideWeapons;
+DUMPER7_ASSERTS_PremissionPlanning_HideWeapons;
 
-// Function ReadyOrNot.PreMissionPlanning.Init
+// Function ReadyOrNot.PremissionPlanning.Init
 // 0x02F0 (0x02F0 - 0x0000)
-struct PreMissionPlanning_Init final
+struct PremissionPlanning_Init final
 {
 public:
 	bool                                          bReadOnly;                                         // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	struct FSavedLoadout                          PreviewLoadout;                                    // 0x0008(0x02E8)(Parm, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_Init;
+DUMPER7_ASSERTS_PremissionPlanning_Init;
 
-// Function ReadyOrNot.PreMissionPlanning.IsAnyWeaponVisible
+// Function ReadyOrNot.PremissionPlanning.IsAnyWeaponVisible
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_IsAnyWeaponVisible final
+struct PremissionPlanning_IsAnyWeaponVisible final
 {
 public:
 	bool                                          ReturnValue;                                       // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_IsAnyWeaponVisible;
+DUMPER7_ASSERTS_PremissionPlanning_IsAnyWeaponVisible;
 
-// Function ReadyOrNot.PreMissionPlanning.IsInLobby
+// Function ReadyOrNot.PremissionPlanning.IsInLobby
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_IsInLobby final
+struct PremissionPlanning_IsInLobby final
 {
 public:
 	bool                                          ReturnValue;                                       // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_IsInLobby;
+DUMPER7_ASSERTS_PremissionPlanning_IsInLobby;
 
-// Function ReadyOrNot.PreMissionPlanning.PlayAnimationOnPreviewCharacter
+// Function ReadyOrNot.PremissionPlanning.PlayAnimationOnPreviewCharacter
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_PlayAnimationOnPreviewCharacter final
+struct PremissionPlanning_PlayAnimationOnPreviewCharacter final
 {
 public:
 	class FString                                 Animation;                                         // 0x0000(0x0010)(Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_PlayAnimationOnPreviewCharacter;
+DUMPER7_ASSERTS_PremissionPlanning_PlayAnimationOnPreviewCharacter;
 
-// Function ReadyOrNot.PreMissionPlanning.PlayAnimationOnQuartermaster
+// Function ReadyOrNot.PremissionPlanning.PlayAnimationOnQuartermaster
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_PlayAnimationOnQuartermaster final
+struct PremissionPlanning_PlayAnimationOnQuartermaster final
 {
 public:
 	class FString                                 Animation;                                         // 0x0000(0x0010)(Parm, ZeroConstructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_PlayAnimationOnQuartermaster;
+DUMPER7_ASSERTS_PremissionPlanning_PlayAnimationOnQuartermaster;
 
-// Function ReadyOrNot.PreMissionPlanning.SaveItemClassAsSlot
+// Function ReadyOrNot.PremissionPlanning.SaveItemClassAsSlot
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_SaveItemClassAsSlot final
+struct PremissionPlanning_SaveItemClassAsSlot final
 {
 public:
 	EItemType                                     ItemType;                                          // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	TSubclassOf<class ABaseItem>                  Class_0;                                           // 0x0008(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SaveItemClassAsSlot;
+DUMPER7_ASSERTS_PremissionPlanning_SaveItemClassAsSlot;
 
-// Function ReadyOrNot.PreMissionPlanning.SetActiveCameraByTag
+// Function ReadyOrNot.PremissionPlanning.SetActiveCameraByTag
 // 0x000C (0x000C - 0x0000)
-struct PreMissionPlanning_SetActiveCameraByTag final
+struct PremissionPlanning_SetActiveCameraByTag final
 {
 public:
 	class FName                                   Tag;                                               // 0x0000(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	float                                         BlendTime;                                         // 0x0008(0x0004)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetActiveCameraByTag;
+DUMPER7_ASSERTS_PremissionPlanning_SetActiveCameraByTag;
 
-// Function ReadyOrNot.PreMissionPlanning.SetBodyArmour
+// Function ReadyOrNot.PremissionPlanning.SetBodyArmour
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetBodyArmour final
+struct PremissionPlanning_SetBodyArmour final
 {
 public:
 	TSubclassOf<class ABaseItem>                  BodyArmour;                                        // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetBodyArmour;
+DUMPER7_ASSERTS_PremissionPlanning_SetBodyArmour;
 
-// Function ReadyOrNot.PreMissionPlanning.SetEquippingSwatMember
+// Function ReadyOrNot.PremissionPlanning.SetEquippingSwatMember
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_SetEquippingSwatMember final
+struct PremissionPlanning_SetEquippingSwatMember final
 {
 public:
 	EEquippingSwat                                NewEquippingSwat;                                  // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	class AReadyOrNotPlayerState*                 NewEquippingPlayerState;                           // 0x0008(0x0008)(Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetEquippingSwatMember;
+DUMPER7_ASSERTS_PremissionPlanning_SetEquippingSwatMember;
 
-// Function ReadyOrNot.PreMissionPlanning.SetHeadwear
+// Function ReadyOrNot.PremissionPlanning.SetHeadwear
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetHeadwear final
+struct PremissionPlanning_SetHeadwear final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Headwear;                                          // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetHeadwear;
+DUMPER7_ASSERTS_PremissionPlanning_SetHeadwear;
 
-// Function ReadyOrNot.PreMissionPlanning.SetItem
+// Function ReadyOrNot.PremissionPlanning.SetItem
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_SetItem final
+struct PremissionPlanning_SetItem final
 {
 public:
 	EItemType                                     ItemType;                                          // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	TSubclassOf<class ABaseItem>                  ItemClass;                                         // 0x0008(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetItem;
+DUMPER7_ASSERTS_PremissionPlanning_SetItem;
 
-// Function ReadyOrNot.PreMissionPlanning.SetItem_V2
+// Function ReadyOrNot.PremissionPlanning.SetItem_V2
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_SetItem_V2 final
+struct PremissionPlanning_SetItem_V2 final
 {
 public:
 	EItemClass                                    ItemClass;                                         // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	TSubclassOf<class ABaseItem>                  ItemObjectClass;                                   // 0x0008(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetItem_V2;
+DUMPER7_ASSERTS_PremissionPlanning_SetItem_V2;
 
-// Function ReadyOrNot.PreMissionPlanning.SetLightColorByTag
+// Function ReadyOrNot.PremissionPlanning.SetLightColorByTag
 // 0x0018 (0x0018 - 0x0000)
-struct PreMissionPlanning_SetLightColorByTag final
+struct PremissionPlanning_SetLightColorByTag final
 {
 public:
 	class FName                                   Tag;                                               // 0x0000(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	struct FLinearColor                           Color;                                             // 0x0008(0x0010)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetLightColorByTag;
+DUMPER7_ASSERTS_PremissionPlanning_SetLightColorByTag;
 
-// Function ReadyOrNot.PreMissionPlanning.SetLockInput
+// Function ReadyOrNot.PremissionPlanning.SetLockInput
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_SetLockInput final
+struct PremissionPlanning_SetLockInput final
 {
 public:
 	bool                                          bShouldLockInput;                                  // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetLockInput;
+DUMPER7_ASSERTS_PremissionPlanning_SetLockInput;
 
-// Function ReadyOrNot.PreMissionPlanning.SetLongTactical
+// Function ReadyOrNot.PremissionPlanning.SetLongTactical
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetLongTactical final
+struct PremissionPlanning_SetLongTactical final
 {
 public:
 	TSubclassOf<class ABaseItem>                  LongTactical;                                      // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetLongTactical;
+DUMPER7_ASSERTS_PremissionPlanning_SetLongTactical;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPlayerSkin
+// Function ReadyOrNot.PremissionPlanning.SetPlayerSkin
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPlayerSkin final
+struct PremissionPlanning_SetPlayerSkin final
 {
 public:
 	TSubclassOf<class USkinComponent>             SkinCompClass;                                     // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPlayerSkin;
+DUMPER7_ASSERTS_PremissionPlanning_SetPlayerSkin;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryAmmunitionAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryAmmunitionAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryAmmunitionAttachment final
+struct PremissionPlanning_SetPrimaryAmmunitionAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          AmmunitionAttachment;                              // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryAmmunitionAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryAmmunitionAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryGripAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryGripAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryGripAttachment final
+struct PremissionPlanning_SetPrimaryGripAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          GripAttachment;                                    // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryGripAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryGripAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryIlluminatorAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryIlluminatorAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryIlluminatorAttachment final
+struct PremissionPlanning_SetPrimaryIlluminatorAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          IlluminatorAttachment;                             // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryIlluminatorAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryIlluminatorAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryMuzzleAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryMuzzleAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryMuzzleAttachment final
+struct PremissionPlanning_SetPrimaryMuzzleAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          MuzzleAttachment;                                  // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryMuzzleAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryMuzzleAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryOverbarrelAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryOverbarrelAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryOverbarrelAttachment final
+struct PremissionPlanning_SetPrimaryOverbarrelAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          OverbarrelAttachment;                              // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryOverbarrelAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryOverbarrelAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryScopeAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryScopeAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryScopeAttachment final
+struct PremissionPlanning_SetPrimaryScopeAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          ScopeAttachment;                                   // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryScopeAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryScopeAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimarySkinAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimarySkinAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimarySkinAttachment final
+struct PremissionPlanning_SetPrimarySkinAttachment final
 {
 public:
 	TSubclassOf<class USkinComponent>             SkinAttachment;                                    // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimarySkinAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimarySkinAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryStockAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryStockAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryStockAttachment final
+struct PremissionPlanning_SetPrimaryStockAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          StockAttachment;                                   // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryStockAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryStockAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryUnderbarrelAttachment
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryUnderbarrelAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetPrimaryUnderbarrelAttachment final
+struct PremissionPlanning_SetPrimaryUnderbarrelAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          UnderbarrelAttachment;                             // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryUnderbarrelAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryUnderbarrelAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetPrimaryWeapon
+// Function ReadyOrNot.PremissionPlanning.SetPrimaryWeapon
 // 0x00B8 (0x00B8 - 0x0000)
-struct PreMissionPlanning_SetPrimaryWeapon final
+struct PremissionPlanning_SetPrimaryWeapon final
 {
 public:
 	struct FWeaponData                            WeaponData;                                        // 0x0000(0x00B8)(Parm, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetPrimaryWeapon;
+DUMPER7_ASSERTS_PremissionPlanning_SetPrimaryWeapon;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryAmmunitionAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryAmmunitionAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryAmmunitionAttachment final
+struct PremissionPlanning_SetSecondaryAmmunitionAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          AmmunitionAttachment;                              // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryAmmunitionAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryAmmunitionAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryGripAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryGripAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryGripAttachment final
+struct PremissionPlanning_SetSecondaryGripAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          GripAttachment;                                    // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryGripAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryGripAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryIlluminatorAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryIlluminatorAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryIlluminatorAttachment final
+struct PremissionPlanning_SetSecondaryIlluminatorAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          IlluminatorAttachment;                             // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryIlluminatorAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryIlluminatorAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryMuzzleAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryMuzzleAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryMuzzleAttachment final
+struct PremissionPlanning_SetSecondaryMuzzleAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          MuzzleAttachment;                                  // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryMuzzleAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryMuzzleAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryOverbarrelAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryOverbarrelAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryOverbarrelAttachment final
+struct PremissionPlanning_SetSecondaryOverbarrelAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          OverbarrelAttachment;                              // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryOverbarrelAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryOverbarrelAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryScopeAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryScopeAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryScopeAttachment final
+struct PremissionPlanning_SetSecondaryScopeAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          ScopeAttachment;                                   // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryScopeAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryScopeAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondarySkinAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondarySkinAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondarySkinAttachment final
+struct PremissionPlanning_SetSecondarySkinAttachment final
 {
 public:
 	TSubclassOf<class USkinComponent>             SkinAttachment;                                    // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondarySkinAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondarySkinAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryStockAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryStockAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryStockAttachment final
+struct PremissionPlanning_SetSecondaryStockAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          StockAttachment;                                   // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryStockAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryStockAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryUnderbarrelAttachment
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryUnderbarrelAttachment
 // 0x0008 (0x0008 - 0x0000)
-struct PreMissionPlanning_SetSecondaryUnderbarrelAttachment final
+struct PremissionPlanning_SetSecondaryUnderbarrelAttachment final
 {
 public:
 	TSubclassOf<class UWeaponAttachment>          UnderbarrelAttachment;                             // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryUnderbarrelAttachment;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryUnderbarrelAttachment;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSecondaryWeapon
+// Function ReadyOrNot.PremissionPlanning.SetSecondaryWeapon
 // 0x00B8 (0x00B8 - 0x0000)
-struct PreMissionPlanning_SetSecondaryWeapon final
+struct PremissionPlanning_SetSecondaryWeapon final
 {
 public:
 	struct FWeaponData                            WeaponData;                                        // 0x0000(0x00B8)(Parm, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSecondaryWeapon;
+DUMPER7_ASSERTS_PremissionPlanning_SetSecondaryWeapon;
 
-// Function ReadyOrNot.PreMissionPlanning.SetSubcategory
+// Function ReadyOrNot.PremissionPlanning.SetSubcategory
 // 0x0001 (0x0001 - 0x0000)
-struct PreMissionPlanning_SetSubcategory final
+struct PremissionPlanning_SetSubcategory final
 {
 public:
 	EPreMissionSubCategory                        NewSubCategory;                                    // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetSubcategory;
+DUMPER7_ASSERTS_PremissionPlanning_SetSubcategory;
 
-// Function ReadyOrNot.PreMissionPlanning.SetWorkbenchItemClass
+// Function ReadyOrNot.PremissionPlanning.SetWorkbenchItemClass
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_SetWorkbenchItemClass final
+struct PremissionPlanning_SetWorkbenchItemClass final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Item;                                              // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	class FName                                   Tag;                                               // 0x0008(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_SetWorkbenchItemClass;
+DUMPER7_ASSERTS_PremissionPlanning_SetWorkbenchItemClass;
 
-// Function ReadyOrNot.PreMissionPlanning.UpdatePreviewCharacter
+// Function ReadyOrNot.PremissionPlanning.UpdatePreviewCharacter
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_UpdatePreviewCharacter final
+struct PremissionPlanning_UpdatePreviewCharacter final
 {
 public:
 	class AReadyOrNotPlayerState*                 InPreviewPlayerState;                              // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	class FName                                   Tag;                                               // 0x0008(0x0008)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_UpdatePreviewCharacter;
+DUMPER7_ASSERTS_PremissionPlanning_UpdatePreviewCharacter;
 
-// Function ReadyOrNot.PreMissionPlanning.UpdatePreviewWeaponAttachments
+// Function ReadyOrNot.PremissionPlanning.UpdatePreviewWeaponAttachments
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_UpdatePreviewWeaponAttachments final
+struct PremissionPlanning_UpdatePreviewWeaponAttachments final
 {
 public:
 	bool                                          IsSecondary;                                       // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	TSubclassOf<class UWeaponAttachment>          Attachment;                                        // 0x0008(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_UpdatePreviewWeaponAttachments;
+DUMPER7_ASSERTS_PremissionPlanning_UpdatePreviewWeaponAttachments;
 
-// Function ReadyOrNot.PreMissionPlanning.UpdatePreviewWeaponSkin
+// Function ReadyOrNot.PremissionPlanning.UpdatePreviewWeaponSkin
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_UpdatePreviewWeaponSkin final
+struct PremissionPlanning_UpdatePreviewWeaponSkin final
 {
 public:
 	bool                                          IsSecondary;                                       // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_1[0x7];                                        // 0x0001(0x0007)(Fixing Size After Last Property [ Dumper-7 ])
 	TSubclassOf<class USkinComponent>             SkinAttachment;                                    // 0x0008(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_UpdatePreviewWeaponSkin;
+DUMPER7_ASSERTS_PremissionPlanning_UpdatePreviewWeaponSkin;
 
-// Function ReadyOrNot.PreMissionPlanning.UpdateWeaponDefaultFireMode
+// Function ReadyOrNot.PremissionPlanning.UpdateWeaponDefaultFireMode
 // 0x0010 (0x0010 - 0x0000)
-struct PreMissionPlanning_UpdateWeaponDefaultFireMode final
+struct PremissionPlanning_UpdateWeaponDefaultFireMode final
 {
 public:
 	TSubclassOf<class ABaseWeapon>                Weapon;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	EFireMode                                     NewDefaultFireMode;                                // 0x0008(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_9[0x7];                                        // 0x0009(0x0007)(Fixing Struct Size After Last Property [ Dumper-7 ])
 };
-DUMPER7_ASSERTS_PreMissionPlanning_UpdateWeaponDefaultFireMode;
+DUMPER7_ASSERTS_PremissionPlanning_UpdateWeaponDefaultFireMode;
 
-// Function ReadyOrNot.PreMissionPlanning.UpdateWeaponPreset
+// Function ReadyOrNot.PremissionPlanning.UpdateWeaponPreset
 // 0x0078 (0x0078 - 0x0000)
-struct PreMissionPlanning_UpdateWeaponPreset final
+struct PremissionPlanning_UpdateWeaponPreset final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Weapon;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -16557,27 +16557,27 @@ public:
 	int32                                         Index_0;                                           // 0x0070(0x0004)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	uint8                                         Pad_74[0x4];                                       // 0x0074(0x0004)(Fixing Struct Size After Last Property [ Dumper-7 ])
 };
-DUMPER7_ASSERTS_PreMissionPlanning_UpdateWeaponPreset;
+DUMPER7_ASSERTS_PremissionPlanning_UpdateWeaponPreset;
 
-// Function ReadyOrNot.PreMissionPlanning.UpdateWeaponPresets
+// Function ReadyOrNot.PremissionPlanning.UpdateWeaponPresets
 // 0x0018 (0x0018 - 0x0000)
-struct PreMissionPlanning_UpdateWeaponPresets final
+struct PremissionPlanning_UpdateWeaponPresets final
 {
 public:
 	TSubclassOf<class ABaseItem>                  Weapon;                                            // 0x0000(0x0008)(Parm, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	struct FSavedWeaponPreset                     Presets;                                           // 0x0008(0x0010)(Parm, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_UpdateWeaponPresets;
+DUMPER7_ASSERTS_PremissionPlanning_UpdateWeaponPresets;
 
-// Function ReadyOrNot.PreMissionPlanning.ItemClassToItemType
+// Function ReadyOrNot.PremissionPlanning.ItemClassToItemType
 // 0x0002 (0x0002 - 0x0000)
-struct PreMissionPlanning_ItemClassToItemType final
+struct PremissionPlanning_ItemClassToItemType final
 {
 public:
 	EItemClass                                    InItemClass;                                       // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 	EItemType                                     ReturnValue;                                       // 0x0001(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_PreMissionPlanning_ItemClassToItemType;
+DUMPER7_ASSERTS_PremissionPlanning_ItemClassToItemType;
 
 // Function ReadyOrNot.BleedComponent.CanHeal
 // 0x0001 (0x0001 - 0x0000)
@@ -23370,32 +23370,32 @@ public:
 };
 DUMPER7_ASSERTS_ObjectivePoint_InitSettings;
 
-// Function ReadyOrNot.Optiwand.Server_NotifyMirroring
+// Function ReadyOrNot.optiwand.Server_NotifyMirroring
 // 0x0001 (0x0001 - 0x0000)
-struct Optiwand_Server_NotifyMirroring final
+struct optiwand_Server_NotifyMirroring final
 {
 public:
 	bool                                          bIsMirroring;                                      // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_Optiwand_Server_NotifyMirroring;
+DUMPER7_ASSERTS_optiwand_Server_NotifyMirroring;
 
-// Function ReadyOrNot.Optiwand.GetViewMode
+// Function ReadyOrNot.optiwand.GetViewMode
 // 0x0001 (0x0001 - 0x0000)
-struct Optiwand_GetViewMode final
+struct optiwand_GetViewMode final
 {
 public:
 	EOptiwandViewMode                             ReturnValue;                                       // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_Optiwand_GetViewMode;
+DUMPER7_ASSERTS_optiwand_GetViewMode;
 
-// Function ReadyOrNot.Optiwand.IsCameraBlocked
+// Function ReadyOrNot.optiwand.IsCameraBlocked
 // 0x0001 (0x0001 - 0x0000)
-struct Optiwand_IsCameraBlocked final
+struct optiwand_IsCameraBlocked final
 {
 public:
 	bool                                          ReturnValue;                                       // 0x0000(0x0001)(Parm, OutParm, ZeroConstructor, ReturnParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
 };
-DUMPER7_ASSERTS_Optiwand_IsCameraBlocked;
+DUMPER7_ASSERTS_optiwand_IsCameraBlocked;
 
 // Function ReadyOrNot.TherapistWidget.GetCharactersInTherapy
 // 0x0010 (0x0010 - 0x0000)
@@ -35543,6 +35543,24 @@ public:
 };
 DUMPER7_ASSERTS_ReadyOrNotFunctionLibrary_SetFMODVolume;
 
+// Function ReadyOrNot.ReadyOrNotFunctionLibrary.SetFocusInstant
+// 0x0008 (0x0008 - 0x0000)
+struct ReadyOrNotFunctionLibrary_SetFocusInstant final
+{
+public:
+	class UWidget*                                InWidget;                                          // 0x0000(0x0008)(Parm, ZeroConstructor, InstancedReference, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_ReadyOrNotFunctionLibrary_SetFocusInstant;
+
+// Function ReadyOrNot.ReadyOrNotFunctionLibrary.SetFocusNextTick
+// 0x0008 (0x0008 - 0x0000)
+struct ReadyOrNotFunctionLibrary_SetFocusNextTick final
+{
+public:
+	class UWidget*                                InWidget;                                          // 0x0000(0x0008)(Parm, ZeroConstructor, InstancedReference, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_ReadyOrNotFunctionLibrary_SetFocusNextTick;
+
 // Function ReadyOrNot.ReadyOrNotFunctionLibrary.SetPlanarReflectionScreenPercentage
 // 0x0010 (0x0010 - 0x0000)
 struct ReadyOrNotFunctionLibrary_SetPlanarReflectionScreenPercentage final
@@ -35563,6 +35581,18 @@ public:
 	struct FMargin                                Padding;                                           // 0x0008(0x0010)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, NativeAccessSpecifierPublic)
 };
 DUMPER7_ASSERTS_ReadyOrNotFunctionLibrary_SetSafeZonePadding;
+
+// Function ReadyOrNot.ReadyOrNotFunctionLibrary.SetSupportsDelayedFocus
+// 0x0010 (0x0010 - 0x0000)
+struct ReadyOrNotFunctionLibrary_SetSupportsDelayedFocus final
+{
+public:
+	class UWidget*                                InWidget;                                          // 0x0000(0x0008)(Parm, ZeroConstructor, InstancedReference, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	bool                                          bInEnabled;                                        // 0x0008(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	bool                                          bPropagateToChildren;                              // 0x0009(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	uint8                                         Pad_A[0x6];                                        // 0x000A(0x0006)(Fixing Struct Size After Last Property [ Dumper-7 ])
+};
+DUMPER7_ASSERTS_ReadyOrNotFunctionLibrary_SetSupportsDelayedFocus;
 
 // Function ReadyOrNot.ReadyOrNotFunctionLibrary.SetupPostProcessEffect
 // 0x0030 (0x0030 - 0x0000)

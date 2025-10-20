@@ -12,6 +12,7 @@
 
 #include "SlateCore_structs.hpp"
 #include "Engine_structs.hpp"
+#include "SGraphicPreset_structs.hpp"
 #include "ReadyOrNot_structs.hpp"
 #include "ReadyOrNot_classes.hpp"
 
@@ -20,24 +21,27 @@ namespace SDK
 {
 
 // BlueprintGeneratedClass BP_GameInstance.BP_GameInstance_C
-// 0x0028 (0x0E78 - 0x0E50)
+// 0x0078 (0x0EC8 - 0x0E50)
 class UBP_GameInstance_C final : public UReadyOrNotGameInstance
 {
 public:
 	struct FPointerToUberGraphFrame               UberGraphFrame;                                    // 0x0E50(0x0008)(ZeroConstructor, Transient, DuplicateTransient)
 	TArray<class FString>                         StreamedLevels;                                    // 0x0E58(0x0010)(Edit, BlueprintVisible, DisableEditOnInstance)
 	class FString                                 ModeURL;                                           // 0x0E68(0x0010)(Edit, BlueprintVisible, ZeroConstructor, DisableEditOnInstance, HasGetValueTypeHash)
+	struct FSGraphicPreset                        SteamDeckPreset;                                   // 0x0E78(0x0050)(Edit, BlueprintVisible, DisableEditOnInstance, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
 
 public:
 	void AddPauseGameCondition(const class FString& PauseCondition);
 	void AdjustAccessibilitySettings();
 	void AdjustVolume();
 	void ApplyAudioPreset();
+	void ApplyDeckPreset();
 	void ExecuteUbergraph_BP_GameInstance(int32 EntryPoint);
 	void OnSettingsSaved();
 	void PauseGameWithConditon(const class FString& NewCondition);
 	void ReceiveInit();
 	void RemovePauseGameCondition(const class FString& PauseCondition);
+	void SetGraphicsOption(const struct FSGraphicPreset& SGraphicPreset);
 
 public:
 	static class UClass* StaticClass()

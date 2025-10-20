@@ -12,8 +12,8 @@
 
 #include "Engine_structs.hpp"
 #include "ReadyOrNot_classes.hpp"
-#include "CommonInput_structs.hpp"
 #include "UMG_structs.hpp"
+#include "CommonInput_structs.hpp"
 
 
 namespace SDK

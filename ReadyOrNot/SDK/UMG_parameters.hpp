@@ -378,16 +378,6 @@ public:
 };
 DUMPER7_ASSERTS_Widget_SetRenderTranslation;
 
-// Function UMG.Widget.SetSupportsDelayedFocus
-// 0x0002 (0x0002 - 0x0000)
-struct Widget_SetSupportsDelayedFocus final
-{
-public:
-	bool                                          bInEnabled;                                        // 0x0000(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	bool                                          bPropagateToChildren;                              // 0x0001(0x0001)(Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_Widget_SetSupportsDelayedFocus;
-
 // Function UMG.Widget.SetToolTip
 // 0x0008 (0x0008 - 0x0000)
 struct Widget_SetToolTip final

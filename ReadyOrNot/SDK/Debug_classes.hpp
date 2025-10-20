@@ -10,10 +10,10 @@
 
 #include "Basic.hpp"
 
+#include "Debug_structs.hpp"
 #include "Engine_classes.hpp"
 #include "CoreUObject_structs.hpp"
 #include "CoreUObject_classes.hpp"
-#include "Debug_structs.hpp"
 
 
 namespace SDK

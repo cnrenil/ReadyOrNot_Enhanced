@@ -12,8 +12,8 @@
 
 #include "CommonUI_classes.hpp"
 #include "Engine_structs.hpp"
-#include "ReadyOrNot_structs.hpp"
 #include "CommonInput_structs.hpp"
+#include "ReadyOrNot_structs.hpp"
 
 
 namespace SDK
@@ -49,6 +49,7 @@ public:
 	void BP_OnDeactivated();
 	bool BP_OnHandleBackAction();
 	void ChangePage(class FName PageName);
+	void Construct();
 	void ExecuteUbergraph_W_Loadout_Page_Gear(int32 EntryPoint);
 	void HeaderSubpageNavigation(class FName OptionNameID);
 	void Hide(double Delay, bool Collapse);

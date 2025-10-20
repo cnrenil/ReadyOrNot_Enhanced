@@ -17,6 +17,34 @@
 namespace SDK
 {
 
+// Function BF_Triangulate.BF_Triangulate_C.TriangulatePolygon
+// (Static, Public, HasOutParams, HasDefaults, BlueprintCallable, BlueprintEvent)
+// Parameters:
+// TArray<struct FVector>&                 Vertices                                               (BlueprintVisible, BlueprintReadOnly, Parm, OutParm, ReferenceParm)
+// class UObject*                          __WorldContext                                         (BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash)
+// TArray<int32>*                          Triangles                                              (Parm, OutParm)
+
+void UBF_Triangulate_C::TriangulatePolygon(TArray<struct FVector>& Vertices, class UObject* __WorldContext, TArray<int32>* Triangles)
+{
+	static class UFunction* Func = nullptr;
+
+	if (Func == nullptr)
+		Func = StaticClass()->GetFunction("BF_Triangulate_C", "TriangulatePolygon");
+
+	Params::BF_Triangulate_C_TriangulatePolygon Parms{};
+
+	Parms.Vertices = std::move(Vertices);
+	Parms.__WorldContext = __WorldContext;
+
+	GetDefaultObj()->ProcessEvent(Func, &Parms);
+
+	Vertices = std::move(Parms.Vertices);
+
+	if (Triangles != nullptr)
+		*Triangles = std::move(Parms.Triangles);
+}
+
+
 // Function BF_Triangulate.BF_Triangulate_C.RecursiveTriangulate
 // (Static, Public, HasOutParams, HasDefaults, BlueprintCallable, BlueprintEvent)
 // Parameters:
@@ -47,34 +75,6 @@ void UBF_Triangulate_C::RecursiveTriangulate(TArray<struct FST_VertexID>& vert, 
 	vert = std::move(Parms.vert);
 	FullSetVert = std::move(Parms.FullSetVert);
 	BuiltSeg = std::move(Parms.BuiltSeg);
-
-	if (Triangles != nullptr)
-		*Triangles = std::move(Parms.Triangles);
-}
-
-
-// Function BF_Triangulate.BF_Triangulate_C.TriangulatePolygon
-// (Static, Public, HasOutParams, HasDefaults, BlueprintCallable, BlueprintEvent)
-// Parameters:
-// TArray<struct FVector>&                 Vertices                                               (BlueprintVisible, BlueprintReadOnly, Parm, OutParm, ReferenceParm)
-// class UObject*                          __WorldContext                                         (BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash)
-// TArray<int32>*                          Triangles                                              (Parm, OutParm)
-
-void UBF_Triangulate_C::TriangulatePolygon(TArray<struct FVector>& Vertices, class UObject* __WorldContext, TArray<int32>* Triangles)
-{
-	static class UFunction* Func = nullptr;
-
-	if (Func == nullptr)
-		Func = StaticClass()->GetFunction("BF_Triangulate_C", "TriangulatePolygon");
-
-	Params::BF_Triangulate_C_TriangulatePolygon Parms{};
-
-	Parms.Vertices = std::move(Vertices);
-	Parms.__WorldContext = __WorldContext;
-
-	GetDefaultObj()->ProcessEvent(Func, &Parms);
-
-	Vertices = std::move(Parms.Vertices);
 
 	if (Triangles != nullptr)
 		*Triangles = std::move(Parms.Triangles);

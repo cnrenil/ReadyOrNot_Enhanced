@@ -75,15 +75,6 @@ public:
 };
 DUMPER7_ASSERTS_FBreakingEvent;
 
-// ScriptStruct ChaosCaching.RichCurves
-// 0x0010 (0x0010 - 0x0000)
-struct FRichCurves final
-{
-public:
-	TArray<struct FRichCurve>                     RichCurves;                                        // 0x0000(0x0010)(ZeroConstructor, NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_FRichCurves;
-
 // ScriptStruct ChaosCaching.CollisionEvent
 // 0x00E8 (0x00F0 - 0x0008)
 struct FCollisionEvent final : public FCacheEventBase
@@ -120,6 +111,15 @@ public:
 };
 DUMPER7_ASSERTS_FTrailingEvent;
 
+// ScriptStruct ChaosCaching.MovieSceneChaosCacheParams
+// 0x0008 (0x0028 - 0x0020)
+struct FMovieSceneChaosCacheParams final : public FMovieSceneBaseCacheParams
+{
+public:
+	class UChaosCacheCollection*                  CacheCollection;                                   // 0x0020(0x0008)(Edit, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_FMovieSceneChaosCacheParams;
+
 // ScriptStruct ChaosCaching.CacheEventTrack
 // 0x0038 (0x0038 - 0x0000)
 struct FCacheEventTrack final
@@ -145,33 +145,6 @@ public:
 	uint8                                         Pad_7A[0xF6];                                      // 0x007A(0x00F6)(Fixing Struct Size After Last Property [ Dumper-7 ])
 };
 DUMPER7_ASSERTS_FObservedComponent;
-
-// ScriptStruct ChaosCaching.MovieSceneChaosCacheParams
-// 0x0008 (0x0028 - 0x0020)
-struct FMovieSceneChaosCacheParams final : public FMovieSceneBaseCacheParams
-{
-public:
-	class UChaosCacheCollection*                  CacheCollection;                                   // 0x0020(0x0008)(Edit, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_FMovieSceneChaosCacheParams;
-
-// ScriptStruct ChaosCaching.MovieSceneChaosCacheSectionTemplateParameters
-// 0x0028 (0x0030 - 0x0008)
-struct FMovieSceneChaosCacheSectionTemplateParameters final : public FMovieSceneBaseCacheSectionTemplateParameters
-{
-public:
-	struct FMovieSceneChaosCacheParams            ChaosCacheParams;                                  // 0x0008(0x0028)(NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_FMovieSceneChaosCacheSectionTemplateParameters;
-
-// ScriptStruct ChaosCaching.MovieSceneChaosCacheSectionTemplate
-// 0x0030 (0x0050 - 0x0020)
-struct FMovieSceneChaosCacheSectionTemplate final : public FMovieSceneEvalTemplate
-{
-public:
-	struct FMovieSceneChaosCacheSectionTemplateParameters Params;                                    // 0x0020(0x0030)(NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_FMovieSceneChaosCacheSectionTemplate;
 
 // ScriptStruct ChaosCaching.ParticleTransformTrack
 // 0x0048 (0x0048 - 0x0000)
@@ -208,6 +181,15 @@ public:
 };
 DUMPER7_ASSERTS_FCacheSpawnableTemplate;
 
+// ScriptStruct ChaosCaching.RichCurves
+// 0x0010 (0x0010 - 0x0000)
+struct FRichCurves final
+{
+public:
+	TArray<struct FRichCurve>                     RichCurves;                                        // 0x0000(0x0010)(ZeroConstructor, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_FRichCurves;
+
 // ScriptStruct ChaosCaching.CompressedRichCurves
 // 0x0010 (0x0010 - 0x0000)
 struct FCompressedRichCurves final
@@ -216,6 +198,24 @@ public:
 	TArray<struct FCompressedRichCurve>           CompressedRichCurves;                              // 0x0000(0x0010)(ZeroConstructor, NativeAccessSpecifierPublic)
 };
 DUMPER7_ASSERTS_FCompressedRichCurves;
+
+// ScriptStruct ChaosCaching.MovieSceneChaosCacheSectionTemplateParameters
+// 0x0028 (0x0030 - 0x0008)
+struct FMovieSceneChaosCacheSectionTemplateParameters final : public FMovieSceneBaseCacheSectionTemplateParameters
+{
+public:
+	struct FMovieSceneChaosCacheParams            ChaosCacheParams;                                  // 0x0008(0x0028)(NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_FMovieSceneChaosCacheSectionTemplateParameters;
+
+// ScriptStruct ChaosCaching.MovieSceneChaosCacheSectionTemplate
+// 0x0030 (0x0050 - 0x0020)
+struct FMovieSceneChaosCacheSectionTemplate final : public FMovieSceneEvalTemplate
+{
+public:
+	struct FMovieSceneChaosCacheSectionTemplateParameters Params;                                    // 0x0020(0x0030)(NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_FMovieSceneChaosCacheSectionTemplate;
 
 }
 

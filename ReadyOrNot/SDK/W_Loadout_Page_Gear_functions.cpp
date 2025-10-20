@@ -160,6 +160,20 @@ void UW_Loadout_Page_Gear_C::ChangePage(class FName PageName)
 }
 
 
+// Function W_Loadout_Page_Gear.W_Loadout_Page_Gear_C.Construct
+// (BlueprintCosmetic, Event, Public, BlueprintEvent)
+
+void UW_Loadout_Page_Gear_C::Construct()
+{
+	static class UFunction* Func = nullptr;
+
+	if (Func == nullptr)
+		Func = Class->GetFunction("W_Loadout_Page_Gear_C", "Construct");
+
+	UObject::ProcessEvent(Func, nullptr);
+}
+
+
 // Function W_Loadout_Page_Gear.W_Loadout_Page_Gear_C.ExecuteUbergraph_W_Loadout_Page_Gear
 // (Final, UbergraphFunction, HasDefaults)
 // Parameters:

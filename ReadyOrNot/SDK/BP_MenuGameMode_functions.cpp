@@ -136,43 +136,6 @@ void ABP_MenuGameMode_C::OnMessageClicked()
 }
 
 
-// Function BP_MenuGameMode.BP_MenuGameMode_C.CreateRestartWidget
-// (Event, Public, BlueprintEvent)
-
-void ABP_MenuGameMode_C::CreateRestartWidget()
-{
-	static class UFunction* Func = nullptr;
-
-	if (Func == nullptr)
-		Func = Class->GetFunction("BP_MenuGameMode_C", "CreateRestartWidget");
-
-	UObject::ProcessEvent(Func, nullptr);
-}
-
-
-// Function BP_MenuGameMode.BP_MenuGameMode_C.ChoosePlayerStart
-// (Event, Public, HasOutParams, BlueprintCallable, BlueprintEvent)
-// Parameters:
-// class AController*                      Player                                                 (BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash)
-// class AActor*                           ReturnValue                                            (Parm, OutParm, ZeroConstructor, ReturnParm, NoDestructor, HasGetValueTypeHash)
-
-class AActor* ABP_MenuGameMode_C::ChoosePlayerStart(class AController* Player)
-{
-	static class UFunction* Func = nullptr;
-
-	if (Func == nullptr)
-		Func = Class->GetFunction("BP_MenuGameMode_C", "ChoosePlayerStart");
-
-	Params::BP_MenuGameMode_C_ChoosePlayerStart Parms{};
-
-	Parms.Player = Player;
-
-	UObject::ProcessEvent(Func, &Parms);
-
-	return Parms.ReturnValue;
-}
-
-
 // Function BP_MenuGameMode.BP_MenuGameMode_C.FindSpawnPoint
 // (Public, HasOutParams, HasDefaults, BlueprintCallable, BlueprintEvent, BlueprintPure)
 // Parameters:
@@ -214,6 +177,43 @@ void ABP_MenuGameMode_C::ExecuteUbergraph_BP_MenuGameMode(int32 EntryPoint)
 	Parms.EntryPoint = EntryPoint;
 
 	UObject::ProcessEvent(Func, &Parms);
+}
+
+
+// Function BP_MenuGameMode.BP_MenuGameMode_C.CreateRestartWidget
+// (Event, Public, BlueprintEvent)
+
+void ABP_MenuGameMode_C::CreateRestartWidget()
+{
+	static class UFunction* Func = nullptr;
+
+	if (Func == nullptr)
+		Func = Class->GetFunction("BP_MenuGameMode_C", "CreateRestartWidget");
+
+	UObject::ProcessEvent(Func, nullptr);
+}
+
+
+// Function BP_MenuGameMode.BP_MenuGameMode_C.ChoosePlayerStart
+// (Event, Public, HasOutParams, BlueprintCallable, BlueprintEvent)
+// Parameters:
+// class AController*                      Player                                                 (BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash)
+// class AActor*                           ReturnValue                                            (Parm, OutParm, ZeroConstructor, ReturnParm, NoDestructor, HasGetValueTypeHash)
+
+class AActor* ABP_MenuGameMode_C::ChoosePlayerStart(class AController* Player)
+{
+	static class UFunction* Func = nullptr;
+
+	if (Func == nullptr)
+		Func = Class->GetFunction("BP_MenuGameMode_C", "ChoosePlayerStart");
+
+	Params::BP_MenuGameMode_C_ChoosePlayerStart Parms{};
+
+	Parms.Player = Player;
+
+	UObject::ProcessEvent(Func, &Parms);
+
+	return Parms.ReturnValue;
 }
 
 }

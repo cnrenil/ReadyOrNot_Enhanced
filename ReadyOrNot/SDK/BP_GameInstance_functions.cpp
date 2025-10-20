@@ -79,6 +79,20 @@ void UBP_GameInstance_C::ApplyAudioPreset()
 }
 
 
+// Function BP_GameInstance.BP_GameInstance_C.ApplyDeckPreset
+// (Event, Public, BlueprintEvent)
+
+void UBP_GameInstance_C::ApplyDeckPreset()
+{
+	static class UFunction* Func = nullptr;
+
+	if (Func == nullptr)
+		Func = Class->GetFunction("BP_GameInstance_C", "ApplyDeckPreset");
+
+	UObject::ProcessEvent(Func, nullptr);
+}
+
+
 // Function BP_GameInstance.BP_GameInstance_C.ExecuteUbergraph_BP_GameInstance
 // (Final, UbergraphFunction, HasDefaults)
 // Parameters:
@@ -162,6 +176,26 @@ void UBP_GameInstance_C::RemovePauseGameCondition(const class FString& PauseCond
 	Params::BP_GameInstance_C_RemovePauseGameCondition Parms{};
 
 	Parms.PauseCondition = std::move(PauseCondition);
+
+	UObject::ProcessEvent(Func, &Parms);
+}
+
+
+// Function BP_GameInstance.BP_GameInstance_C.SetGraphicsOption
+// (HasOutParams, BlueprintCallable, BlueprintEvent)
+// Parameters:
+// const struct FSGraphicPreset&           SGraphicPreset                                         (ConstParm, BlueprintVisible, BlueprintReadOnly, Parm, OutParm, ReferenceParm, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+
+void UBP_GameInstance_C::SetGraphicsOption(const struct FSGraphicPreset& SGraphicPreset)
+{
+	static class UFunction* Func = nullptr;
+
+	if (Func == nullptr)
+		Func = Class->GetFunction("BP_GameInstance_C", "SetGraphicsOption");
+
+	Params::BP_GameInstance_C_SetGraphicsOption Parms{};
+
+	Parms.SGraphicPreset = std::move(SGraphicPreset);
 
 	UObject::ProcessEvent(Func, &Parms);
 }

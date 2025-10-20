@@ -11,8 +11,8 @@
 #include "Basic.hpp"
 
 #include "CoreUObject_structs.hpp"
-#include "Slate_structs.hpp"
 #include "ST_DropdownOptions_structs.hpp"
+#include "Slate_structs.hpp"
 
 
 namespace SDK::Params

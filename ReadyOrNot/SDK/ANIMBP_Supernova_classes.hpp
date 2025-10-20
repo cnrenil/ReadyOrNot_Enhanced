@@ -10,9 +10,9 @@
 
 #include "Basic.hpp"
 
+#include "ANIMBP_Supernova_structs.hpp"
 #include "Engine_structs.hpp"
 #include "Engine_classes.hpp"
-#include "ANIMBP_Supernova_structs.hpp"
 #include "AnimGraphRuntime_structs.hpp"
 
 

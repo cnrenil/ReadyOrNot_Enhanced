@@ -10,11 +10,11 @@
 
 #include "Basic.hpp"
 
-#include "Engine_structs.hpp"
-#include "PreMissionHotkeyGroups_structs.hpp"
 #include "st_HotkeySettings_structs.hpp"
+#include "Engine_structs.hpp"
 #include "ReadyOrNot_structs.hpp"
 #include "ReadyOrNot_classes.hpp"
+#include "PreMissionHotkeyGroups_structs.hpp"
 #include "UMG_structs.hpp"
 
 
@@ -23,7 +23,7 @@ namespace SDK
 
 // WidgetBlueprintGeneratedClass W_PreMission.W_PreMission_C
 // 0x01F8 (0x0D70 - 0x0B78)
-class UW_PreMission_C final : public UPreMissionPlanning
+class UW_PreMission_C final : public UPremissionPlanning
 {
 public:
 	struct FPointerToUberGraphFrame               UberGraphFrame;                                    // 0x0B78(0x0008)(ZeroConstructor, Transient, DuplicateTransient)

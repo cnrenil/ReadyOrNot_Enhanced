@@ -37,10 +37,10 @@ public:
 	void ReceiveEndPlay(EEndPlayReason EndPlayReason);
 	void ReceiveBeginPlay();
 	void OnMessageClicked();
-	void CreateRestartWidget();
-	class AActor* ChoosePlayerStart(class AController* Player);
 	void FindSpawnPoint(const class FString& Tag, struct FTransform* SpawnPoint);
 	void ExecuteUbergraph_BP_MenuGameMode(int32 EntryPoint);
+	void CreateRestartWidget();
+	class AActor* ChoosePlayerStart(class AController* Player);
 
 public:
 	static class UClass* StaticClass()

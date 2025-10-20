@@ -743,44 +743,6 @@ void UWidget::SetFocus()
 }
 
 
-// Function UMG.Widget.SetFocusInstant
-// (Final, RequiredAPI, Native, Public, BlueprintCallable)
-
-void UWidget::SetFocusInstant()
-{
-	static class UFunction* Func = nullptr;
-
-	if (Func == nullptr)
-		Func = Class->GetFunction("Widget", "SetFocusInstant");
-
-	auto Flgs = Func->FunctionFlags;
-	Func->FunctionFlags |= 0x400;
-
-	UObject::ProcessEvent(Func, nullptr);
-
-	Func->FunctionFlags = Flgs;
-}
-
-
-// Function UMG.Widget.SetFocusNextTick
-// (Final, RequiredAPI, Native, Public, BlueprintCallable)
-
-void UWidget::SetFocusNextTick()
-{
-	static class UFunction* Func = nullptr;
-
-	if (Func == nullptr)
-		Func = Class->GetFunction("Widget", "SetFocusNextTick");
-
-	auto Flgs = Func->FunctionFlags;
-	Func->FunctionFlags |= 0x400;
-
-	UObject::ProcessEvent(Func, nullptr);
-
-	Func->FunctionFlags = Flgs;
-}
-
-
 // Function UMG.Widget.SetIsEnabled
 // (RequiredAPI, Native, Public, BlueprintCallable)
 // Parameters:
@@ -1127,33 +1089,6 @@ void UWidget::SetRenderTranslation(const struct FVector2D& Translation)
 	Params::Widget_SetRenderTranslation Parms{};
 
 	Parms.Translation = std::move(Translation);
-
-	auto Flgs = Func->FunctionFlags;
-	Func->FunctionFlags |= 0x400;
-
-	UObject::ProcessEvent(Func, &Parms);
-
-	Func->FunctionFlags = Flgs;
-}
-
-
-// Function UMG.Widget.SetSupportsDelayedFocus
-// (RequiredAPI, Native, Public, BlueprintCallable)
-// Parameters:
-// bool                                    bInEnabled                                             (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-// bool                                    bPropagateToChildren                                   (Parm, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-
-void UWidget::SetSupportsDelayedFocus(bool bInEnabled, bool bPropagateToChildren)
-{
-	static class UFunction* Func = nullptr;
-
-	if (Func == nullptr)
-		Func = Class->GetFunction("Widget", "SetSupportsDelayedFocus");
-
-	Params::Widget_SetSupportsDelayedFocus Parms{};
-
-	Parms.bInEnabled = bInEnabled;
-	Parms.bPropagateToChildren = bPropagateToChildren;
 
 	auto Flgs = Func->FunctionFlags;
 	Func->FunctionFlags |= 0x400;

@@ -12,8 +12,8 @@
 
 #include "MovieRenderPipelineRenderPasses_structs.hpp"
 #include "MovieRenderPipelineCore_classes.hpp"
-#include "CoreUObject_structs.hpp"
 #include "ActorLayerUtilities_structs.hpp"
+#include "CoreUObject_structs.hpp"
 
 
 namespace SDK

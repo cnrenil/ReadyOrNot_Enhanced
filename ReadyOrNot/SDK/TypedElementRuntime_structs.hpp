@@ -56,15 +56,6 @@ public:
 };
 DUMPER7_ASSERTS_FTypedElementSelectionSetState;
 
-// ScriptStruct TypedElementRuntime.TypedElementIsSelectedOptions
-// 0x0001 (0x0001 - 0x0000)
-struct FTypedElementIsSelectedOptions final
-{
-public:
-	bool                                          bAllowIndirect;                                    // 0x0000(0x0001)(BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
-};
-DUMPER7_ASSERTS_FTypedElementIsSelectedOptions;
-
 // ScriptStruct TypedElementRuntime.TypedElementSelectionNormalizationOptions
 // 0x0002 (0x0002 - 0x0000)
 struct FTypedElementSelectionNormalizationOptions final
@@ -74,6 +65,15 @@ public:
 	bool                                          bFollowAttachment;                                 // 0x0001(0x0001)(BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
 };
 DUMPER7_ASSERTS_FTypedElementSelectionNormalizationOptions;
+
+// ScriptStruct TypedElementRuntime.TypedElementIsSelectedOptions
+// 0x0001 (0x0001 - 0x0000)
+struct FTypedElementIsSelectedOptions final
+{
+public:
+	bool                                          bAllowIndirect;                                    // 0x0000(0x0001)(BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPrivate)
+};
+DUMPER7_ASSERTS_FTypedElementIsSelectedOptions;
 
 }
 

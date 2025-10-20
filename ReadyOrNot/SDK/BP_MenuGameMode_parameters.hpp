@@ -64,16 +64,6 @@ public:
 };
 DUMPER7_ASSERTS_BP_MenuGameMode_C_ReceiveEndPlay;
 
-// Function BP_MenuGameMode.BP_MenuGameMode_C.ChoosePlayerStart
-// 0x0010 (0x0010 - 0x0000)
-struct BP_MenuGameMode_C_ChoosePlayerStart final
-{
-public:
-	class AController*                            Player;                                            // 0x0000(0x0008)(BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash)
-	class AActor*                                 ReturnValue;                                       // 0x0008(0x0008)(Parm, OutParm, ZeroConstructor, ReturnParm, NoDestructor, HasGetValueTypeHash)
-};
-DUMPER7_ASSERTS_BP_MenuGameMode_C_ChoosePlayerStart;
-
 // Function BP_MenuGameMode.BP_MenuGameMode_C.FindSpawnPoint
 // 0x0130 (0x0130 - 0x0000)
 struct BP_MenuGameMode_C_FindSpawnPoint final
@@ -149,6 +139,16 @@ public:
 	int32                                         CallFunc_Add_IntInt_ReturnValue_1;                 // 0x01FC(0x0004)(ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
 };
 DUMPER7_ASSERTS_BP_MenuGameMode_C_ExecuteUbergraph_BP_MenuGameMode;
+
+// Function BP_MenuGameMode.BP_MenuGameMode_C.ChoosePlayerStart
+// 0x0010 (0x0010 - 0x0000)
+struct BP_MenuGameMode_C_ChoosePlayerStart final
+{
+public:
+	class AController*                            Player;                                            // 0x0000(0x0008)(BlueprintVisible, BlueprintReadOnly, Parm, ZeroConstructor, NoDestructor, HasGetValueTypeHash)
+	class AActor*                                 ReturnValue;                                       // 0x0008(0x0008)(Parm, OutParm, ZeroConstructor, ReturnParm, NoDestructor, HasGetValueTypeHash)
+};
+DUMPER7_ASSERTS_BP_MenuGameMode_C_ChoosePlayerStart;
 
 }
 

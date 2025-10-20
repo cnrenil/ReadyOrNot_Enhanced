@@ -34,8 +34,8 @@
 #include "AIModule_classes.hpp"
 #include "CommonInput_structs.hpp"
 #include "CommonInput_classes.hpp"
-#include "InputRemapping_structs.hpp"
 #include "InputCore_structs.hpp"
+#include "InputRemapping_structs.hpp"
 #include "PhysicsCore_structs.hpp"
 #include "PhysicsCore_classes.hpp"
 #include "OnlineSubsystemUtils_structs.hpp"
@@ -11373,6 +11373,7 @@ public:
 	void AddPauseGameCondition(const class FString& PauseCondition);
 	void AddReplayEvent(EReplayEventType EventType, const struct FVector& Location, float Timestamp, const class FString& AdditionalInformation);
 	void ApplyDecalSettings();
+	void ApplyDeckPreset();
 	void BuildMapList();
 	bool CanChangeMutedState(const class FString& UniqueNetId);
 	void CommanderCompleteMission(const class FString& Mission);
@@ -12868,9 +12869,9 @@ public:
 };
 DUMPER7_ASSERTS_UMenuWidget;
 
-// Class ReadyOrNot.PreMissionPlanning
+// Class ReadyOrNot.PremissionPlanning
 // 0x0760 (0x0B78 - 0x0418)
-class UPreMissionPlanning : public UMenuWidget
+class UPremissionPlanning : public UMenuWidget
 {
 public:
 	bool                                          bIsWeaponCustomization;                            // 0x0418(0x0001)(BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -12918,7 +12919,7 @@ public:
 	uint8                                         Pad_B72[0x6];                                      // 0x0B72(0x0006)(Fixing Struct Size After Last Property [ Dumper-7 ])
 
 public:
-	static class UPreMissionPlanning* GetPremissionPlanning();
+	static class UPremissionPlanning* GetPremissionPlanning();
 
 	void AttachPrimaryToSocket(class FName Socket);
 	void AttachSecondaryToSocket(class FName Socket);
@@ -13016,18 +13017,18 @@ public:
 public:
 	static class UClass* StaticClass()
 	{
-		STATIC_CLASS_IMPL("PreMissionPlanning")
+		STATIC_CLASS_IMPL("PremissionPlanning")
 	}
 	static const class FName& StaticName()
 	{
-		STATIC_NAME_IMPL(L"PreMissionPlanning")
+		STATIC_NAME_IMPL(L"PremissionPlanning")
 	}
-	static class UPreMissionPlanning* GetDefaultObj()
+	static class UPremissionPlanning* GetDefaultObj()
 	{
-		return GetDefaultObjImpl<UPreMissionPlanning>();
+		return GetDefaultObjImpl<UPremissionPlanning>();
 	}
 };
-DUMPER7_ASSERTS_UPreMissionPlanning;
+DUMPER7_ASSERTS_UPremissionPlanning;
 
 // Class ReadyOrNot.BaseTriggerable
 // 0x0018 (0x02B0 - 0x0298)
@@ -16053,9 +16054,9 @@ public:
 };
 DUMPER7_ASSERTS_ACommanderGM;
 
-// Class ReadyOrNot.Optiwand
+// Class ReadyOrNot.optiwand
 // 0x0120 (0x0DA0 - 0x0C80)
-class AOptiwand : public ABaseItem
+class Aoptiwand : public ABaseItem
 {
 public:
 	class UAnimMontage*                           Montage_StartOptiwandADS;                          // 0x0C78(0x0008)(Edit, BlueprintVisible, BlueprintReadOnly, ZeroConstructor, DisableEditOnInstance, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -16091,18 +16092,18 @@ public:
 public:
 	static class UClass* StaticClass()
 	{
-		STATIC_CLASS_IMPL("Optiwand")
+		STATIC_CLASS_IMPL("optiwand")
 	}
 	static const class FName& StaticName()
 	{
-		STATIC_NAME_IMPL(L"Optiwand")
+		STATIC_NAME_IMPL(L"optiwand")
 	}
-	static class AOptiwand* GetDefaultObj()
+	static class Aoptiwand* GetDefaultObj()
 	{
-		return GetDefaultObjImpl<AOptiwand>();
+		return GetDefaultObjImpl<Aoptiwand>();
 	}
 };
-DUMPER7_ASSERTS_AOptiwand;
+DUMPER7_ASSERTS_Aoptiwand;
 
 // Class ReadyOrNot.CommanderGS
 // 0x0000 (0x0A40 - 0x0A40)
@@ -26049,7 +26050,7 @@ DUMPER7_ASSERTS_ULoadoutVerticalItemListWidget;
 
 // Class ReadyOrNot.LoadoutWidget
 // 0x01F0 (0x0D68 - 0x0B78)
-class ULoadoutWidget final : public UPreMissionPlanning
+class ULoadoutWidget final : public UPremissionPlanning
 {
 public:
 	TSubclassOf<class UUserWidget>                HUDWidgetClass;                                    // 0x0B78(0x0008)(ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -26599,7 +26600,7 @@ DUMPER7_ASSERTS_ALockpickGun;
 
 // Class ReadyOrNot.MagazineAttachment
 // 0x0020 (0x10F0 - 0x10D0)
-class UMagazineAttachment : public UWeaponAttachment
+class UMagazineAttachment final : public UWeaponAttachment
 {
 public:
 	class UStaticMesh*                            MagazineStaticMesh;                                // 0x10D0(0x0008)(Edit, ZeroConstructor, NoDestructor, UObjectWrapper, HasGetValueTypeHash, NativeAccessSpecifierPublic)
@@ -31196,8 +31197,11 @@ public:
 	static void ServerTravel(const class FString& URL);
 	static void SetDecalSize(class UDecalComponent* InDecalComponent, const struct FVector& DecalSize);
 	static void SetFMODVolume(float Volume);
+	static void SetFocusInstant(class UWidget* InWidget);
+	static void SetFocusNextTick(class UWidget* InWidget);
 	static void SetPlanarReflectionScreenPercentage(class UPlanarReflectionComponent* InPlanarReflectionComponent, float NewScreenPercentage);
 	static void SetSafeZonePadding(class USafeZoneSlot* SafeZoneSlot, const struct FMargin& Padding);
+	static void SetSupportsDelayedFocus(class UWidget* InWidget, bool bInEnabled, bool bPropagateToChildren);
 	static void SetupPostProcessEffect(class UObject* Context, struct FPostProcessEffect* InPostProcessEffect);
 	static bool ShowEOSSocialOverlay();
 	static bool ShowFriendsUIForInvitation(const class UObject* WorldContextObject, bool bForceOpenPlatformNative);
@@ -31516,6 +31520,7 @@ public:
 	uint8                                         Pad_40C[0x4];                                      // 0x040C(0x0004)(Fixing Struct Size After Last Property [ Dumper-7 ])
 
 public:
+	void ApplySteamDeckProfile();
 	void ResetAccessibilityOptions();
 	void ResetAudioOptions();
 	void ResetGamepadControlsSettings();

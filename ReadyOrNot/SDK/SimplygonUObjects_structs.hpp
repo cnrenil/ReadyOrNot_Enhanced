@@ -492,16 +492,6 @@ public:
 };
 DUMPER7_ASSERTS_FBoneSettings;
 
-// ScriptStruct SimplygonUObjects.ParameterizerSettings
-// 0x0008 (0x0008 - 0x0000)
-struct FParameterizerSettings final
-{
-public:
-	float                                         MaxStretch;                                        // 0x0000(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-	float                                         LargeChartsImportance;                             // 0x0004(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
-};
-DUMPER7_ASSERTS_FParameterizerSettings;
-
 // ScriptStruct SimplygonUObjects.ChartAggregatorSettings
 // 0x0038 (0x0038 - 0x0000)
 struct FChartAggregatorSettings final
@@ -520,6 +510,16 @@ public:
 	uint8                                         Pad_31[0x7];                                       // 0x0031(0x0007)(Fixing Struct Size After Last Property [ Dumper-7 ])
 };
 DUMPER7_ASSERTS_FChartAggregatorSettings;
+
+// ScriptStruct SimplygonUObjects.ParameterizerSettings
+// 0x0008 (0x0008 - 0x0000)
+struct FParameterizerSettings final
+{
+public:
+	float                                         MaxStretch;                                        // 0x0000(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+	float                                         LargeChartsImportance;                             // 0x0004(0x0004)(Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash, NativeAccessSpecifierPublic)
+};
+DUMPER7_ASSERTS_FParameterizerSettings;
 
 // ScriptStruct SimplygonUObjects.InputMaterialSettings
 // 0x0004 (0x0004 - 0x0000)
