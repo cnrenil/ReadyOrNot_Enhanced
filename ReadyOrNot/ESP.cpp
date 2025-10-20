@@ -133,11 +133,11 @@ void Cheats::RenderESP()
 		AReadyOrNotGameState* GameState = GVars.GameState;
 		if (!GameState) return;
 
-		TArray<AObjective*> Objectives = GameState->MissionObjectives;
+        TArray<AObjective*> Objectives = GameState->MissionObjectives;
 
-		for (AObjective* Objective : Objectives)
+        for (AObjective* Objective : Objectives)
 		{
-			if (!Objective) continue;
+			if (!Objective || !Utils::IsValidActor(Objective)) continue;
 
             FVector2D ObjectiveScreen;
 

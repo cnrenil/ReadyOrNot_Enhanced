@@ -134,40 +134,6 @@ void Cheats::SetPlayerSpeed()
 	}
 }
 
-void Cheats::SilentAim()
-{
-	if (!CVars.SilentAim) return;
-
-	if (GetAsyncKeyState(VK_LBUTTON) & 1)
-	{
-		if (!GVars.PlayerController) return;
-
-		if (!GVars.ReadyOrNotChar) return;
-		auto* RONC = GVars.ReadyOrNotChar;
-
-		AReadyOrNotCharacter* TargetActor = Utils::GetBestTarget(SilentAimSettings.AngleWeight, SilentAimSettings.MaxFOV, SilentAimSettings.TargetCivilians);
-
-		FVector TargetLocation;
-		if (TargetActor)
-		{
-			TargetActor->GetActorEyesViewPoint(&TargetLocation, nullptr);
-		}
-		else
-		{
-			return;
-		}
-
-		if (RONC && RONC->GetEquippedWeapon())
-		{
-			if (GVars.PlayerController->HasAuthority())
-				RONC->GetEquippedWeapon()->Server_OnFire(FRotator(), TargetLocation, 0);
-			else
-				RONC->GetEquippedWeapon()->OnFire(FRotator(), TargetLocation);
-			return;
-		}
-	}
-}
-
 void Cheats::AddMag()
 {
 	if (!GVars.ReadyOrNotChar || !GVars.PlayerController) return;
@@ -266,14 +232,25 @@ void Cheats::DrawReticle()
 
 	if (!GVars.ReadyOrNotChar) return;
 
-	if (MiscSettings.ReticleWhenThrowing && !reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->bQuickThrowing) return;
+	if (MiscSettings.ReticleWhenThrowing && (!reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->bQuickThrowing || !(reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->GetEquippedItem() && (reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->GetEquippedItem()->ItemType == EItemType::IT_Grenade || reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->GetEquippedItem()->ItemType == EItemType::IT_GrenadeNonLethal)))) 
+		return;
 
-	ImVec2 ScreenSize = ImGui::GetIO().DisplaySize;
-
-	ImGui::GetBackgroundDrawList()->AddCircleFilled(
-		ImVec2(ScreenSize.x / 2 + MiscSettings.ReticlePosition.x, ScreenSize.y / 2 + MiscSettings.ReticlePosition.y),
-		MiscSettings.ReticleSize, 
-		Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
+	if (MiscSettings.CrossReticle)
+	{
+		ImGui::GetBackgroundDrawList()->AddLine(
+			ImVec2((GVars.ScreenSize.x / 2 + MiscSettings.ReticlePosition.x) - 5, GVars.ScreenSize.y / 2 + MiscSettings.ReticlePosition.y),
+			ImVec2((GVars.ScreenSize.x / 2 + MiscSettings.ReticlePosition.x) + 5, GVars.ScreenSize.y / 2 + MiscSettings.ReticlePosition.y), Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
+		ImGui::GetBackgroundDrawList()->AddLine(
+			ImVec2(GVars.ScreenSize.x / 2 + MiscSettings.ReticlePosition.x, (GVars.ScreenSize.y / 2 + MiscSettings.ReticlePosition.y) - 5),
+			ImVec2(GVars.ScreenSize.x / 2 + MiscSettings.ReticlePosition.x, (GVars.ScreenSize.y / 2 + MiscSettings.ReticlePosition.y) + 5), Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
+	}
+	else
+	{
+		ImGui::GetBackgroundDrawList()->AddCircleFilled(
+			ImVec2(GVars.ScreenSize.x / 2 + MiscSettings.ReticlePosition.x, GVars.ScreenSize.y / 2 + MiscSettings.ReticlePosition.y),
+			MiscSettings.ReticleSize,
+			Utils::ConvertImVec4toU32(MiscSettings.ReticleColor));
+	}
 }
 
 void Cheats::Spam()
@@ -546,7 +523,7 @@ void Cheats::ListPlayers()
 
 	for (APlayerCharacter* Player : Players)
 	{
-		if (!Utils::IsValidActor(Player)) continue;
+		if (!Player || !Utils::IsValidActor(Player)) continue;
 		if (!Player->PlayerState) continue;
 		if (!Player->PlayerState->GetPlayerName()) continue;
 
@@ -578,27 +555,11 @@ void Cheats::ListPlayers()
 			ImGui::PushID((ID + "Teleport").c_str());
 			if (ImGui::Button("Teleport To Self"))
 			{
-				Player->Server_TeleportPlayerToLocation(GVars.ReadyOrNotChar->K2_GetActorLocation(), GVars.ReadyOrNotChar->K2_GetActorLocation());
+				if (GVars.ReadyOrNotChar)
+					Player->Server_TeleportPlayerToLocation(GVars.ReadyOrNotChar->K2_GetActorLocation(), GVars.ReadyOrNotChar->K2_GetActorLocation());
 			}
 			ImGui::PopID();
 		}
 	}
 	ImGui::End();
-}
-
-void Cheats::ForceReady()
-{
-	if (!GVars.GameState) return;
-
-	TArray<AReadyOrNotPlayerState*> PlayerStates = GVars.GameState->GetPlayersAvailableForVote();
-	if (!PlayerStates || PlayerStates.Num() == 0) return;
-
-	for (AReadyOrNotPlayerState* PlayerState : PlayerStates)
-	{
-		if (!Utils::IsValidActor(PlayerState)) continue;
-
-		PlayerState->SetReady(true, PlayerState->LastLoadout);
-		PlayerState->Server_SetReady(true, PlayerState->LastLoadout);
-		PlayerState->bReady = true;
-	}
 }

@@ -49,17 +49,30 @@ struct AimbotSettingsstruct {
 	std::string TargetBone = BoneList.HeadBone;
 	bool RequireKeyHeld = false;
 	ImGuiKey AimbotKey = ImGuiKey_None;
+	float FOVThickness = 1.0f;
+	float ArrowThickness = 2.0f;
+	bool TargetAll = false;
 } inline AimbotSettings;
 
 struct SilentAimSettingsstruct {
 	float HitChance = 100.0f;
 	float MaxFOV = 15.0f;
-	float AngleWeight = 1000.0f;
 	bool TargetCivilians = false;
+	bool TargetDead = false;
+	bool TargetSurrendered = false;
+	bool TargetArrested = false;
+	bool RequiresLOS = false;
+	std::string TargetBone = BoneList.HeadBone;
+	bool DrawFOV = false;
+	bool DrawArrow = false;
+	float ArrowThickness = 2.0f;
+	float FOVThickness = 1.0f;
+	bool TargetAll = false;
 } inline SilentAimSettings;
 
 struct CVarsstruct
 {
+	bool Debug = false;
 	bool SecretFeatures = false;
 	bool GodMode = false;
 	bool InfAmmo = false;
@@ -87,6 +100,7 @@ struct MiscSettingsStruct {
 	bool TriggerBotUsesSilentAim = false;
 	std::string SpamText = "Created by peachmarrow13 check me out on UnknownCheats.me!";
 	bool Promote = true;
+	bool CrossReticle = true;
 } inline MiscSettings;
 
 struct Settingsstruct
@@ -118,5 +132,4 @@ struct Cheats
 	static void AutoWin();
 	static void UnlockDoors();
 	static void ListPlayers();
-	static void ForceReady();
 };
