@@ -81,6 +81,9 @@
     <ClCompile Include="SilentAim.cpp">
       <Filter>Source Files\Cheats</Filter>
     </ClCompile>
+    <ClCompile Include="Init.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SDK\Engine_classes.hpp">
@@ -91,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="Cheats.h">
       <Filter>Source Files\Cheats</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

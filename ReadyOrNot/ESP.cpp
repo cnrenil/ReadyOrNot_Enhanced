@@ -8,6 +8,8 @@
 #include <dxgi.h>
 #include <Windows.h>
 #include <chrono>
+#include <vcruntime_string.h>
+#include <algorithm>
 
 struct BonePair { int Parent; int Child; };
 BonePair SuspectSkeletonBones_1[] = {
@@ -133,20 +135,20 @@ void Cheats::RenderESP()
 		AReadyOrNotGameState* GameState = GVars.GameState;
 		if (!GameState) return;
 
-        TArray<AObjective*> Objectives = GameState->MissionObjectives;
+        TArray<AReportableActor*> AllReportableActors = GameState->AllReportableActors;
 
-        for (AObjective* Objective : Objectives)
+        for (AReportableActor* Objective : AllReportableActors)
 		{
-			if (!Objective || !Utils::IsValidActor(Objective)) continue;
+	        if (!Objective || !Utils::IsValidActor(Objective)) continue;
 
             FVector2D ObjectiveScreen;
 
-            if (GVars.PlayerController->ProjectWorldLocationToScreen(Objective->K2_GetActorLocation(), &ObjectiveScreen, true))
+            if (GVars.PlayerController->ProjectWorldLocationToScreen(Objective->BoxExtents, &ObjectiveScreen, true))
             {
-				ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ObjectiveScreen.X, ObjectiveScreen.Y), 3, IM_COL32(0, 255, 0, 255));
-				ImGui::GetBackgroundDrawList()->AddText(ImVec2(ObjectiveScreen.X + 5, ObjectiveScreen.Y - 5), IM_COL32(0, 255, 0, 255), Objective->ObjectiveName.ToString().c_str());
+		        ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ObjectiveScreen.X, ObjectiveScreen.Y), 3, IM_COL32(0, 255, 0, 255));
+				ImGui::GetBackgroundDrawList()->AddText(ImVec2(ObjectiveScreen.X + 5, ObjectiveScreen.Y - 5), IM_COL32(0, 255, 0, 255), Objective->ReportableName.ToString().c_str());
             }
-		}
+	    }
 	}
 
 	TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
@@ -238,29 +240,134 @@ void Cheats::RenderESP()
 
             FVector ParentPos = Mesh->GetBoneTransform(ParentName, ERelativeTransformSpace::RTS_World).Translation;
             FVector ChildPos = Mesh->GetBoneTransform(ChildName, ERelativeTransformSpace::RTS_World).Translation;
-
             FVector2D ParentScreen, ChildScreen, ActorScreen;
-            if (GVars.PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, true) &&
-                GVars.PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, true))
+
+            if (ESPSettings.LOS)
             {
-                GVars.PlayerController->GetViewportSize(&ViewportX, &ViewportY);
-				if (ParentScreen.X == 0.f && ParentScreen.Y == 0.f or ParentScreen.X > ViewportX or ParentScreen.Y > ViewportY) continue;
-                ImGui::GetBackgroundDrawList()->AddLine(
-                    ImVec2(ParentScreen.X, ParentScreen.Y),
-                    ImVec2(ChildScreen.X, ChildScreen.Y),
-                    RenderColor,
-                    1.5f
+                FVector Start = GVars.POV->Location;
+                FVector End = ParentPos;
+
+                TArray<AActor*> IgnoreActors;
+                IgnoreActors.Add(GVars.ReadyOrNotChar);
+
+                FHitResult HitResult;
+                bool bHit = UKismetSystemLibrary::LineTraceSingle(
+                    GVars.World,
+                    Start,
+                    End,
+                    ETraceTypeQuery::TraceTypeQuery1,
+                    true,
+                    IgnoreActors,
+                    EDrawDebugTrace::None,
+                    &HitResult,
+                    true,
+                    FLinearColor(),
+                    FLinearColor(),
+                    1.0f
                 );
+
+                AActor* HitActor = nullptr;
+                HitActor = HitResult.Component->GetOwner();
+
+                bool bHasLOS = !HitResult.bBlockingHit || HitActor == TargetActor;
+                if (!bHasLOS)
+                    continue;
             }
-            if (ESPSettings.ShowBox && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true))
+
+            if (ESPSettings.Bones)
             {
-            	float distance = GVars.PlayerController->GetDistanceTo(Actor);
-                float boxHeight = 200000.0f / distance;     // tweak scaling factor
-                float boxWidth = boxHeight / 2.0f;
+                
+                if (GVars.PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, true) &&
+                    GVars.PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, true))
+                {
+
+                    GVars.PlayerController->GetViewportSize(&ViewportX, &ViewportY);
+                    if (ParentScreen.X == 0.f && ParentScreen.Y == 0.f or ParentScreen.X > ViewportX or ParentScreen.Y > ViewportY) continue;
+                    ImGui::GetBackgroundDrawList()->AddLine(
+                        ImVec2(ParentScreen.X, ParentScreen.Y),
+                        ImVec2(ChildScreen.X, ChildScreen.Y),
+                        RenderColor,
+                        1.5f
+                    );
+                }
+            }
+            if (ESPSettings.ShowBox && Utils::InFOV(TargetActor, GVars.POV->FOV))
+            {
+                FVector BoundsOrigin;
+                FVector BoundsExtent;
+                Actor->GetActorBounds(true, &BoundsOrigin, &BoundsExtent, false);
+
+                FVector WorldTop = BoundsOrigin + FVector(0.f, 0.f, BoundsExtent.Z);
+                FVector WorldBottom = BoundsOrigin - FVector(0.f, 0.f, BoundsExtent.Z);
+
+                FVector ActorRight = Actor->GetActorRightVector();
+                FVector WorldLeft = BoundsOrigin - ActorRight * BoundsExtent.Y;
+                FVector WorldRight = BoundsOrigin + ActorRight * BoundsExtent.Y;
+
+                FVector2D ScreenTop, ScreenBottom, ScreenLeft, ScreenRight;
+                bool bTopOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldTop, &ScreenTop, true);
+                bool bBottomOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldBottom, &ScreenBottom, true);
+                bool bLeftOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldLeft, &ScreenLeft, true);
+                bool bRightOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldRight, &ScreenRight, true);
+
+                float boxWidth = 0.0f;
+                float boxHeight = 0.0f;
+
+                if (!bTopOnScreen && !bBottomOnScreen && !bTopOnScreen && !bBottomOnScreen)
+                    continue;
+           
+                if (bTopOnScreen && bBottomOnScreen)
+                {
+                    boxHeight = fabsf(ScreenTop.Y - ScreenBottom.Y);
+                }
+
+                if (bLeftOnScreen && bRightOnScreen)
+                {
+                    boxWidth = fabsf(ScreenLeft.X - ScreenRight.X);
+                }
+
+                if (boxHeight <= 0.0f || boxWidth <= 0.0f)
+                {
+                    float distance = GVars.PlayerController->GetDistanceTo(Actor);
+                    if (distance <= 20) distance = 1.0f;
+
+                    const float baseScale = 200000.0f;
+                    float fallbackHeight = baseScale / distance;
+                    float fallbackWidth = fallbackHeight * 0.5f;
+
+                    if (boxHeight <= 0.0f) boxHeight = fallbackHeight;
+                    if (boxWidth <= 0.0f) boxWidth = fallbackWidth;
+                }
+
+                const float padding = 4.0f;
+                boxWidth += padding;
+                boxHeight += padding;
+
+                boxHeight = std::clamp(boxHeight, 10.0f, 10000.0f);
+                boxWidth = std::clamp(boxWidth, 5.0f, 10000.0f);
+
+                FVector2D ScreenOrigin;
+                bool bOriginOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(BoundsOrigin, &ScreenOrigin, true);
+
+                ImVec2 rectCenter;
+                if (bOriginOnScreen)
+                {
+                    rectCenter = ImVec2(ScreenOrigin.X, ScreenOrigin.Y - (boxHeight * 0.5f) + (boxHeight * 0.5f));
+                }
+                else if (bTopOnScreen && bBottomOnScreen)
+                {
+                    rectCenter = ImVec2((ScreenTop.X + ScreenBottom.X) * 0.5f, (ScreenTop.Y + ScreenBottom.Y) * 0.5f);
+                }
+                else
+                {
+                    FVector2D ActorScreen;
+                    GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true);
+                    rectCenter = ImVec2(ActorScreen.X, ActorScreen.Y);
+                }
 
                 ImGui::GetBackgroundDrawList()->AddRect(
-                    ImVec2(ActorScreen.X - boxWidth / 2, ActorScreen.Y - boxHeight / 2),
-                    ImVec2(ActorScreen.X + boxWidth / 2, ActorScreen.Y + boxHeight / 2),
+                    ImVec2(rectCenter.x - boxWidth / 2.f, rectCenter.y - boxHeight / 2.f),
+                    ImVec2(rectCenter.x + boxWidth / 2.f, rectCenter.y + boxHeight / 2.f),
                     RenderColor,
                     0.0f,
                     15,

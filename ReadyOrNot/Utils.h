@@ -81,6 +81,7 @@ struct Utils
 	static ImVec2 FVector2DToImVec2(FVector2D Vector);
 	static FRotator GetRotationToTarget(const FVector& Start, const FVector& Target);
 	static FVector2D ImVec2ToFVector2D(ImVec2 Vector);
+	static bool InFOV(AActor* Actor, float MaxFOV);
 };
 
 struct Variables

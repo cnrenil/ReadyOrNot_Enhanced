@@ -38,7 +38,7 @@ void Cheats::Aimbot()
 
 	double Dist = CameraPos.GetDistanceToInMeters(TargetPos);
 
-	if (AimbotSettings.MinDistance > Dist)
+	if (AimbotSettings.MinDistance > Dist || Dist > AimbotSettings.MaxDistance)
 		return;
 
 	if (AimbotSettings.DrawArrow)

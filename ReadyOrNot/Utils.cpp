@@ -304,3 +304,15 @@ void Utils::DrawSnapLine(FVector TargetPos, float Thickness = 2.0f)
     ImGui::GetBackgroundDrawList()->AddLine(ImVec2(GVars.ScreenSize.x / 2, GVars.ScreenSize.y / 2), ImVec2(ScreenPos.X, ScreenPos.Y), IM_COL32(255, 255, 255, 255), Thickness);
     ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenPos.X, ScreenPos.Y), 2.0f, IM_COL32(0, 255, 0, 255));
 }
+
+bool Utils::InFOV(AActor* Actor, float MaxFOV)
+{
+    if (!Utils::IsValidActor)
+		return false;
+
+    float HalfFOV = MaxFOV * 0.5f;
+    float CosHalfFOV = UKismetMathLibrary::Cos(UKismetMathLibrary::DegreesToRadians(HalfFOV));
+
+    float Dot = Actor->GetDotProductTo(GVars.ReadyOrNotChar);
+    return Dot >= CosHalfFOV;
+}

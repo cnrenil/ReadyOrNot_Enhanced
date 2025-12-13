@@ -1,26 +1,4 @@
-#include "imgui.h"
-#include "misc/cpp/imgui_stdlib.h"
-#include "backends/imgui_impl_win32.h"
-#include "backends/imgui_impl_dx11.h"
-
-#include <cstdio>
-#include <iostream>
-#include <Windows.h>
-#include <d3d11.h>
-#include <dxgi.h>
-#include <chrono>
-#include <imgui_internal.h>
-#include <fstream>
-
-#include "Cheats.h"
-#include "Utils.h"
-#include "SDK/ReadyOrNot_classes.hpp"
-#include "SDK/Engine_classes.hpp"
-
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
-
-using BasicFilesImpleUtils::StringToName;
+#include "Engine.h"
 
 static const std::pair<const char*, std::string> BoneOptions[] = {
 	{"Head", BoneList.HeadBone},
@@ -37,90 +15,21 @@ static const std::pair<const char*, std::string> BoneOptions[] = {
 };
 
 static bool ShowMenu = true;
-static bool Cleaning = false;
 bool init = false;
 
 int Frames = 0;
 
-static void HookSwapChain();
+std::atomic<int> g_PresentCount{ 0 };
+std::atomic<bool> Cleaning{ false };
+std::atomic<bool> Resizing{ false };
+
 static void Cleanup(HMODULE hModule);
-static void InitImGui(HWND hwnd);
 void SaveSettings();
 void LoadSettings();
 
 static ImGuiKey TriggerBotKey = ImGuiKey_None;
 static ImGuiKey ESPKey = ImGuiKey_None;
 static ImGuiKey AimButton = ImGuiKey_None;
-
-typedef HRESULT(__stdcall* tPresent)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
-tPresent oPresent = nullptr;
-IDXGISwapChain* pSwapChain = nullptr;
-ID3D11Device* pDevice = nullptr;
-ID3D11DeviceContext* pContext = nullptr;
-ID3D11RenderTargetView* pRenderTargetView = nullptr;
-DXGI_SWAP_CHAIN_DESC sd = {};
-
-void InitImGui(HWND hwnd)
-{
-	if (!pDevice || !pContext) {
-		std::cout << "[ERROR] Device or Context is null...\n";
-		Cleaning = true;
-		Sleep(30);
-		return;
-	}
-
-	if (!hwnd) {
-		std::cout << "[ERROR] HWND is null...\n";
-		Cleaning = true;
-		Sleep(30);
-		return;
-	}
-
-	if (Cleaning) return;
-
-	// Setup ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-
-	// Setup Platform/Renderer backends
-	if (!ImGui_ImplWin32_Init(hwnd)) {
-		std::cout << "[ERROR] ImGui_ImplWin32_Init failed\n";
-		return;
-	}
-	if (!ImGui_ImplDX11_Init(pDevice, pContext)) {
-		std::cout << "[ERROR] ImGui_ImplDX11_Init failed\n";
-		ImGui_ImplWin32_Shutdown();
-		return;
-	}
-
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Controller Controls
-	io.Fonts->AddFontDefault();
-	io.MouseDrawCursor = true;  // Let ImGui draw the cursor
-
-	ImGui::StyleColorsDark();
-
-	if (pSwapChain) { // Create render target if we have a valid swapchain
-		ID3D11Texture2D* pBackBuffer = nullptr;
-		HRESULT hr = pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer);
-		if (SUCCEEDED(hr)) {
-			hr = pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTargetView);
-			if (SUCCEEDED(hr)) {
-				std::cout << "[InitImGui] Render target view created successfully\n";
-			}
-			else {
-				std::cout << "[ERROR] Failed to create render target view: " << std::hex << hr << std::endl;
-			}
-			pBackBuffer->Release();
-		}
-		else {
-			std::cout << "[ERROR] Failed to get back buffer: " << std::hex << hr << std::endl;
-		}
-	}
-
-	std::cout << "[InitImGui] ImGui initialized successfully\n";
-}
 
 // Add WndProc hook for input handling
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -132,14 +41,55 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 	}
 
+	if (uMsg == WM_SETCURSOR) {
+		if (!ShowMenu) {   // only block cursor when menu is hidden
+			SetCursor(NULL);
+			return TRUE;    // prevent Windows from drawing it
+		}
+	}
+
 	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags)
+
+
+HRESULT __stdcall Engine::hkResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
-	if (Cleaning) {
-		return oPresent(SwapChain, SyncInterval, Flags);
+	Resizing.store(true);
+	while (g_PresentCount.load() != 0)
+		Sleep(0); 
+
+
+	// Release ImGui render target
+	if (Engine::pRenderTargetView) {
+		Engine::pRenderTargetView->Release();
+		Engine::pRenderTargetView = nullptr;
 	}
+
+	// Call original function
+	HRESULT hr = Engine::oResizeBuffers(Engine::pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
+
+	// Recreate render target view
+	ID3D11Texture2D* pBackBuffer = nullptr;
+	if (SUCCEEDED(Engine::pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&pBackBuffer))) {
+		Engine::pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &Engine::pRenderTargetView);
+		pBackBuffer->Release();
+	}
+
+	Resizing.store(false);
+
+	return hr;
+}
+
+HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags)
+{
+	if (Cleaning.load())  // If we are cleaning, stop drawing.
+		return Engine::oPresent(SwapChain, SyncInterval, Flags);
+
+	if (Resizing.load())
+		return Engine::oPresent(SwapChain, SyncInterval, Flags);
+
+	g_PresentCount.fetch_add(1);
 
 	GVars.AutoSetVariables();
 
@@ -155,17 +105,17 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 	if (!init)
 	{
-		if (SUCCEEDED(SwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&pDevice)))
+		if (SUCCEEDED(SwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&Engine::pDevice)))
 		{
 			HWND hwnd = FindWindow(L"UnrealWindow", nullptr);
-			pDevice->GetImmediateContext(&pContext);
+			Engine::pDevice->GetImmediateContext(&Engine::pContext);
 
-			pSwapChain = SwapChain;
-			SwapChain->GetDesc(&sd);
+			Engine::pSwapChain = SwapChain;
+			SwapChain->GetDesc(&Engine::sd);
 
 			if (!hwnd) hwnd = GetForegroundWindow();
 
-			InitImGui(hwnd);
+			Engine::InitImGui();
 
 			// Hook WndProc for input handling
 			if (hwnd) {
@@ -185,11 +135,11 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		MiscSettings.SpamText.reserve(512);
 	}
 
-	if (!oPresent)
+	if (!Engine::oPresent)
 		return 0;
 
 	if (!ImGui::GetCurrentContext())
-		return oPresent(SwapChain, SyncInterval, Flags);
+		return Engine::oPresent(SwapChain, SyncInterval, Flags);
 
 	if (GVars.ScreenSize.x != ImGui::GetIO().DisplaySize.x || GVars.ScreenSize.y != ImGui::GetIO().DisplaySize.y)
 	{
@@ -243,7 +193,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 				ImGui::Checkbox("ESP", &CVars.ESP);
 
-				ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 30);
+				ImGui::SliderFloat("Player Speed", &CVars.Speed, 1, 30, "%.1f");
 				ImGui::SameLine();
 				ImGui::Checkbox("Enable Speed", &CVars.SpeedEnabled);
 
@@ -352,7 +302,7 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 			{
 				if (ImGui::TreeNode("Aimbot Settings"))
 				{
-					ImGui::SliderFloat("Aimbot FOV", &AimbotSettings.MaxFOV, 0.01f, 180.0f);
+					ImGui::SliderFloat("Aimbot FOV", &AimbotSettings.MaxFOV, 0.01f, 180.0f, "%.1f");
 
 					ImGui::Checkbox("Should Aimbot require LOS", &AimbotSettings.LOS);
 					AddDefaultTooltip("Targets must be visible; line - of - sight required.");
@@ -365,11 +315,13 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::Checkbox("Target All", &AimbotSettings.TargetAll);
 
-					ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.01f, 100);
+					ImGui::SliderFloat("Max Distance", &AimbotSettings.MaxDistance, 0.0f, 300.0f, "%.1f");
+
+					ImGui::SliderFloat("Minimum Distance", &AimbotSettings.MinDistance, 0.0f, 100.0f, "%.1f");
 
 					ImGui::Checkbox("Smoothing", &AimbotSettings.Smooth);
 
-					ImGui::SliderFloat("Smoothing Vector", &AimbotSettings.SmoothingVector, 1.0f, 20.0f);
+					ImGui::SliderFloat("Smoothing Vector", &AimbotSettings.SmoothingVector, 1.0f, 20.0f, "%.2f");
 
 					ImGui::Checkbox("Draw Arrow", &AimbotSettings.DrawArrow);
 
@@ -425,6 +377,8 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::Checkbox("Show Traps", &ESPSettings.ShowTraps);
 
+					ImGui::Checkbox("Show Bones", &ESPSettings.Bones);
+
 					ImGui::ColorEdit4("Suspect Color", (float*)&ESPSettings.SuspectColor, ImGuiColorEditFlags_NoInputs);
 
 					ImGui::ColorEdit4("Civilian Color", (float*)&ESPSettings.CivilianColor, ImGuiColorEditFlags_NoInputs);
@@ -435,7 +389,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::ColorEdit4("Arrested Color", (float*)&ESPSettings.ArrestColor, ImGuiColorEditFlags_NoInputs);
 
-					if (ImGui::SliderFloat("Bone Opacity", &ESPSettings.BoneOpacity, 0.0f, 1.0f))
+					ImGui::Checkbox("LOS", &ESPSettings.LOS);
+
+					if (ImGui::SliderFloat("Bone Opacity", &ESPSettings.BoneOpacity, 0.0f, 1.0f, "%.2f"))
 					{
 						ESPSettings.SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, ESPSettings.BoneOpacity);
 						ESPSettings.CivilianColor = ImVec4(0.0f, 0.0f, 1.0f, ESPSettings.BoneOpacity);
@@ -461,19 +417,19 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 					ImGui::Checkbox("Target Arrested", &SilentAimSettings.TargetArrested);
 
-					ImGui::SliderFloat("Silent Aim FOV", &SilentAimSettings.MaxFOV, 0.01f, 180.0f);
+					ImGui::SliderFloat("Silent Aim FOV", &SilentAimSettings.MaxFOV, 0, 180.0f, "%.1f");
 
 					ImGui::Checkbox("Draw FOV", &SilentAimSettings.DrawFOV);
 
-					ImGui::SliderFloat("FOV Line Thickness", &SilentAimSettings.FOVThickness, 0.5f, 10.0f);
+					ImGui::SliderFloat("FOV Line Thickness", &SilentAimSettings.FOVThickness, 0.1f, 10.0f, "%.2f");
 
 					ImGui::Checkbox("Draw Snap line", &SilentAimSettings.DrawArrow);
 
-					ImGui::SliderFloat("Snap Line Thickness", &SilentAimSettings.ArrowThickness, 0.5f, 10.0f);
+					ImGui::SliderFloat("Snap Line Thickness", &SilentAimSettings.ArrowThickness, 0.1f, 10.0f, "%.2f");
 
 					ImGui::Checkbox("Require LOS", &SilentAimSettings.RequiresLOS);
 
-					ImGui::SliderFloat("Hit Chance", &SilentAimSettings.HitChance, 0.0f, 100);
+					ImGui::SliderFloat("Hit Chance", &SilentAimSettings.HitChance, 0.0f, 100, "%.1f");
 
 					if (ImGui::BeginCombo("Target Bone", SilentAimSettings.TargetBone.c_str()))
 					{
@@ -662,17 +618,17 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 	if (CVars.Spam)
 		Cheats::Spam();
 
-	if (pRenderTargetView) {
-		pContext->OMSetRenderTargets(1, &pRenderTargetView, nullptr);
+	if (Engine::pRenderTargetView) {
+		Engine::pContext->OMSetRenderTargets(1, &Engine::pRenderTargetView, nullptr);
 
 		D3D11_VIEWPORT vp = {};
-		vp.Width = (float)sd.BufferDesc.Width;
-		vp.Height = (float)sd.BufferDesc.Height;
+		vp.Width = (float)Engine::sd.BufferDesc.Width;
+		vp.Height = (float)Engine::sd.BufferDesc.Height;
 		vp.MinDepth = 0.0f;
 		vp.MaxDepth = 1.0f;
 		vp.TopLeftX = 0;
 		vp.TopLeftY = 0;
-		pContext->RSSetViewports(1, &vp);
+		Engine::pContext->RSSetViewports(1, &vp);
 	}
 
 	ImGui::Render();
@@ -689,26 +645,9 @@ HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 		CVars.ESP = !CVars.ESP;
 	}
 
-	return oPresent ? oPresent(SwapChain, SyncInterval, Flags) : S_OK;
-}
+	g_PresentCount.fetch_sub(1);
 
-// Attach hook
-void HookPresent()
-{
-	if (!pSwapChain) {
-		std::cout << "[ERROR] SwapChain is null...\n";
-		Cleaning = true;
-		Sleep(30);
-		return;
-	}
-
-	void** vTable = *reinterpret_cast<void***>(pSwapChain);
-	oPresent = (tPresent)vTable[8];
-
-	DWORD oldProtect;
-	VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-	vTable[8] = (void*)&hkPresent;
-	VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
+	return Engine::oPresent ? Engine::oPresent(SwapChain, SyncInterval, Flags) : S_OK;
 }
 
 DWORD MainThread(HMODULE hModule)
@@ -736,26 +675,25 @@ DWORD MainThread(HMODULE hModule)
 
 	if (FailAmount >= 8) {
 		std::cout << "[ERROR] Failed to get essential game pointers. Exiting...\n";
-		Cleaning = true;
+		Cleaning.store(true);
 		Sleep(200);
 		Cleanup(hModule);
 		return 0;
 	}
 	Sleep(1000); // Wait a second to ensure everything is loaded
 
-	HookSwapChain(); // Create a dummy device and swapchain to get the vtable
-	HookPresent(); // Hook the Present function
+	Engine::Init();
 
 	std::cout << "Cheat Injected\n";
 
 	LoadSettings();
 
-	while (!Cleaning)
+	while (!Cleaning.load())
 	{
 		if (GetAsyncKeyState(VK_END) & 1) // Exit with END key
 		{
 			std::cout << "Exiting...\n";
-			Cleaning = true;
+			Cleaning.store(true);
 			break;
 		}
 
@@ -785,43 +723,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
 		CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, nullptr);
 		break;
 	case DLL_PROCESS_DETACH:
-		Cleaning = true;
+		Cleaning.store(true);
 		break;
 	}
 	
 	return TRUE;
-}
-
-void HookSwapChain()
-{
-	ZeroMemory(&sd, sizeof(DXGI_SWAP_CHAIN_DESC));
-	sd.BufferCount = 1;
-	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.OutputWindow = FindWindow(L"UnrealWindow", nullptr); //! Fix: Add Window Name to prevent having two windows with same class causing issues; Never mind I am too lazy
-	sd.SampleDesc.Count = 1;
-	sd.SampleDesc.Quality = 0;
-	sd.Windowed = TRUE;
-	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-
-	D3D_FEATURE_LEVEL FeatureLevel;
-	D3D_FEATURE_LEVEL FeatureLevelsRequested = D3D_FEATURE_LEVEL_11_0;
-
-	while (!pSwapChain) {
-		if (SUCCEEDED(D3D11CreateDeviceAndSwapChain(
-			nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0,
-			&FeatureLevelsRequested, 1, D3D11_SDK_VERSION,
-			&sd, &pSwapChain, &pDevice, &FeatureLevel, &pContext)))
-		{
-			void** vTable = *reinterpret_cast<void***>(pSwapChain);
-			// Present = vTable[8]
-			// ResizeBuffers = vTable[13]
-		}
-		else
-		{
-			break;
-		}
-	}
 }
 
 void SaveSettings()
@@ -950,7 +856,7 @@ void LoadSettings()
 
 void Cleanup(HMODULE hModule)
 {
-	Cleaning = true;
+	Cleaning.store(true);
 	std::cout << "Cleaning up...\n";
 
 	CVars.Aimbot = false;
@@ -963,7 +869,8 @@ void Cleanup(HMODULE hModule)
 	Cheats::ToggleInfAmmo();
 	Cheats::SetPlayerSpeed();
 
-	Sleep(300); // Wait a bit to ensure no threads are using resources
+	while (g_PresentCount.load() > 0)
+		Sleep(1);  // wait until all Present calls finish
 
 	if (ImGui::GetCurrentContext())
 	{
@@ -980,39 +887,39 @@ void Cleanup(HMODULE hModule)
 		oWndProc = nullptr;
 	}
 
-	if (pSwapChain)
+	if (Engine::pSwapChain)
 	{
-		void** vTable = *reinterpret_cast<void***>(pSwapChain);
-		if (vTable && oPresent)
+		void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+		if (vTable && Engine::oPresent)
 		{
 			DWORD oldProtect;
 			if (VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect))
 			{
-				vTable[8] = (void*)oPresent;
+				vTable[8] = (void*)Engine::oPresent;
 				VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
 			}
 		}
 	}
 
 	// Clean up DirectX resources
-	if (pRenderTargetView) {
-		pRenderTargetView->Release();
-		pRenderTargetView = nullptr;
+	if (Engine::pRenderTargetView) {
+		Engine::pRenderTargetView->Release();
+		Engine::pRenderTargetView = nullptr;
 	}
-	if (pContext) {
-		pContext->Release();
-		pContext = nullptr;
+	if (Engine::pContext) {
+		Engine::pContext->Release();
+		Engine::pContext = nullptr;
 	}
-	if (pDevice) {
-		pDevice->Release();
-		pDevice = nullptr;
+	if (Engine::pDevice) {
+		Engine::pDevice->Release();
+		Engine::pDevice = nullptr;
 	}
-	if (pSwapChain) {
-		pSwapChain->Release();
-		pSwapChain = nullptr;
+	if (Engine::pSwapChain) {
+		Engine::pSwapChain->Release();
+		Engine::pSwapChain = nullptr;
 	}
-	if (oPresent) {
-		oPresent = nullptr;
+	if (Engine::oPresent) {
+		Engine::oPresent = nullptr;
 	}
 
 	std::cout << "Cleanup complete. Unloading DLL...\n";

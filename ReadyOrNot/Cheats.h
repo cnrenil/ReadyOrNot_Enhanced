@@ -26,22 +26,25 @@ struct EspSettingsstruct {
 	bool ShowBox = false;
 	bool ShowTraps = true;
 	bool ShowObjectives = false;
+	bool Bones = true;
 	float BoneOpacity = 1.0f;
 	ImVec4 SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, BoneOpacity);
 	ImVec4 CivilianColor = ImVec4(0.0f, 0.0f, 1.0f, BoneOpacity);
 	ImVec4 DeadColor = ImVec4(0.0f, 0.0f, 0.0f, BoneOpacity);
 	ImVec4 TeamColor = ImVec4(0.0f, 1.0f, 0.0f, BoneOpacity);
 	ImVec4 ArrestColor = ImVec4(1.0f, 1.0f, 0.0f, BoneOpacity);
+	bool LOS = false;
 
 } inline ESPSettings;
 
 struct AimbotSettingsstruct {
 	float MaxFOV = 15.0f;
+	float MaxDistance = 100.0f;
 	bool LOS = true;
 	bool TargetCivilians = false;
 	bool TargetDead = false;
 	bool TargetArrested = false;
-	float MinDistance = 50.0f;
+	float MinDistance = 2.0f;
 	bool Smooth = false;
 	float SmoothingVector = 5.0f;
 	bool DrawArrow = false;
