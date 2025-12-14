@@ -117,14 +117,18 @@ struct Cheats
 	static void ToggleGodMode();
 	static void ToggleInfAmmo();
 	static void Aimbot();
-	static void UpgradeWeaponStats();
+	static void AddAutoFire();
+	static void RemoveRecoil();
+	static void RemoveSpread();
+	static void SetFireRate(float FireRate);
+	static void PenetrateWalls();
+	static void InstaKill();
 	static void RenderESP();
 	static void SetPlayerSpeed();
 	static void SilentAim();
 	static void AddMag();
 	static void ArrestAll(ETeam Team); // Arrest all of a specific team
 	static void KillAll(ETeam Team);   // Kill all of a specific team
-	static void UpdateNoClip();
 	static void DrawReticle();
 	static void Spam();
 	static void GetAllEvidence();
@@ -135,4 +139,5 @@ struct Cheats
 	static void AutoWin();
 	static void UnlockDoors();
 	static void ListPlayers();
+	static void NoClipToggle();
 };

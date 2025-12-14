@@ -40,12 +40,127 @@ void Cheats::ToggleInfAmmo() {
 
 }
 
-void Cheats::UpgradeWeaponStats()
+void Cheats::PenetrateWalls()
 {
-	if (!GVars.PlayerController) return;
-	if (!GVars.ReadyOrNotChar) return;
+	if (!GVars.ReadyOrNotChar)
+	{
+		Utils::Error("Character Invalid: RemoveSpread ; Misc.cpp");
+		return;
+	}
+	if (!GVars.ReadyOrNotChar->GetEquippedWeapon())
+	{
+		Utils::Error("Weapon Invalid: RemoveSpread ; Misc.cpp");
+		return;
+	}
 	auto* Character = reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar);
 	auto* Gun = Character->GetEquippedWeapon();
+
+	Gun->CurrentAmmoType.PenetrationDistance = 100000;
+	Gun->CurrentAmmoType.PenetrationLevel = 10;
+	Gun->PenetrationDistance = 10000; // Move this
+
+}
+
+void Cheats::AddAutoFire()
+{
+	if (!GVars.ReadyOrNotChar)
+	{
+		Utils::Error("Character Invalid: AddAutoFire ; Misc.cpp");
+		return;
+	}
+	if (!GVars.ReadyOrNotChar->GetEquippedWeapon())
+	{
+		Utils::Error("Weapon Invalid: AddAutoFire ; Misc.cpp");
+		return;
+	}
+	auto* Character = reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar);
+	auto* Gun = Character->GetEquippedWeapon();
+
+	Gun->AvailableFireModes.Add(EFireMode::FM_Auto);
+}
+
+void Cheats::InstaKill()
+{
+	if (!GVars.ReadyOrNotChar)
+	{
+		Utils::Error("Character Invalid: InstaKill ; Misc.cpp");
+		return;
+	}
+	if (!GVars.ReadyOrNotChar->GetEquippedWeapon())
+	{
+		Utils::Error("Weapon Invalid: InstaKill ; Misc.cpp");
+		return;
+	}
+
+	auto* Character = reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar);
+	auto* Gun = Character->GetEquippedWeapon();
+	Gun->CurrentAmmoType.DismembermentDamage = 100000;
+	Gun->CurrentAmmoType.Damage = 10000;
+	Gun->CurrentAmmoType.DurabilityDamage = 10000;
+}
+
+void Cheats::SetFireRate(float FireRateMult)
+{
+	if (!GVars.ReadyOrNotChar)
+	{
+		Utils::Error("Character Invalid: SetFireRate ; Misc.cpp");
+		return;
+	}
+	if (!GVars.ReadyOrNotChar->GetEquippedWeapon())
+	{
+		Utils::Error("Weapon Invalid: SetFireRate ; Misc.cpp");
+		return;
+	}
+
+	auto* Character = reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar);
+	auto* Gun = Character->GetEquippedWeapon();
+	
+	Gun->FireRate = 60 / FireRateMult; // Fire rate has to be adjusted from RPM to delay between shots
+
+	//Gun->RefireDelay = 0.0f;
+}
+
+void Cheats::RemoveSpread()
+{
+	if (!GVars.ReadyOrNotChar)
+	{
+		Utils::Error("Character Invalid: RemoveSpread ; Misc.cpp");
+		return;
+	}
+	if (!GVars.ReadyOrNotChar->GetEquippedWeapon())
+	{
+		Utils::Error("Weapon Invalid: RemoveSpread ; Misc.cpp");
+		return;
+	}
+
+	ABaseMagazineWeapon* Gun = GVars.ReadyOrNotChar->GetEquippedWeapon();
+
+	// Spread removal
+	Gun->SpreadPattern = FRotator();
+	Gun->PendingSpread = FRotator();
+	Gun->SpreadReturnRate = 0.0f;
+	Gun->FirstShotSpread = 0.0f;
+	Gun->VelocitySpreadMultiplier = 0.0f;
+	Gun->VelocityRecoilMultiplier = 0.0f;
+	Gun->ADSSpreadMultiplier = 0.0f;
+	Gun->bIgnoreAmmoTypeSpread = true;
+}
+
+void Cheats::RemoveRecoil()
+{
+	if (!GVars.ReadyOrNotChar)
+	{
+		Utils::Error("Character Invalid: RemoveRecoil ; Misc.cpp");
+		return;
+	}
+	if (!GVars.ReadyOrNotChar->GetEquippedWeapon())
+	{
+		Utils::Error("Weapon Invalid: RemoveRecoil ; Misc.cpp");
+		return;
+	}
+
+	APlayerCharacter* Character = reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar);
+	ABaseMagazineWeapon * Gun = GVars.ReadyOrNotChar->GetEquippedWeapon();
 
 	// Recoil removal
 	Gun->RecoilMultiplierPitch = 0.0f;
@@ -87,38 +202,10 @@ void Cheats::UpgradeWeaponStats()
 	Character->WeaponBobRot = FRotator();
 	Character->WeaponBobTrans = FVector();
 	Gun->bUseFireLoopAnims = false;
-	Gun->DisableOrEnableAnimation();
 	Character->CameraBobRot = FRotator();
 	Character->CameraBobTrans = FVector();
 	Character->MeshspaceRecoilMovementMultiplier = FVector();
 	Character->RecoilSpeed = 0.0f;
-
-	Gun->CurrentAmmoType.HitsChance = 100;
-	Gun->CurrentAmmoType.PenetrationDistance = 100000;
-	Gun->CurrentAmmoType.PenetrationLevel = 10;
-	Gun->CurrentAmmoType.DismembermentDamage = 100000;
-	Gun->CurrentAmmoType.Damage = 10000;
-	Gun->CurrentAmmoType.RicochetChance = 0;
-	Gun->CurrentAmmoType.DurabilityDamage = 10000;
-
-	// Spread removal
-	Gun->SpreadPattern = FRotator();
-	Gun->PendingSpread = FRotator();
-	Gun->SpreadReturnRate = 0.0f;
-	Gun->FirstShotSpread = 0.0f;
-	Gun->VelocitySpreadMultiplier = 0.0f;
-	Gun->VelocityRecoilMultiplier = 0.0f;
-	Gun->ADSSpreadMultiplier = 0.0f;
-	Gun->bIgnoreAmmoTypeSpread = true;
-
-	// Misc
-	Gun->AvailableFireModes.Clear();
-	Gun->AvailableFireModes.Add(EFireMode::FM_Single);
-	Gun->AvailableFireModes.Add(EFireMode::FM_Auto);
-	Gun->FireRate = 0.001f;
-	Gun->MuzzleFlashChance = 0;
-	Gun->PenetrationDistance = 10000;
-	Gun->RefireDelay = 0.0f;
 }
 
 void Cheats::SetPlayerSpeed()
@@ -128,9 +215,9 @@ void Cheats::SetPlayerSpeed()
 	if (PlayerChar)
 	{
 		if (GVars.PlayerController->HasAuthority())
-			PlayerChar->Server_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
+			PlayerChar->Server_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed); // 240 is default walk speed
 		else
-			PlayerChar->Client_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed);
+			PlayerChar->Client_SetWalkSpeed(240.0f * CVars.Speed, 240.0f * CVars.Speed); // 240 is default walk speed
 	}
 }
 
@@ -202,27 +289,6 @@ void Cheats::KillAll(ETeam Team)
 				}
 			}
 		}
-	}
-}
-
-void Cheats::UpdateNoClip()
-{
-	if (!GVars.ReadyOrNotChar || !GVars.PlayerController) return;
-	auto* RONC = GVars.ReadyOrNotChar;
-	auto* Character = reinterpret_cast<APlayerCharacter*>(RONC);
-	if (CVars.NoClip)
-	{
-		GVars.PlayerController->EnableCheats();
-		if (GVars.PlayerController && GVars.PlayerController->CheatManager)
-			GVars.PlayerController->CheatManager->Fly();
-		if (Character->GetMovementComponent())
-			Character->GetMovementComponent()->MovementState.bCanFly = true;
-		if (Character->CharacterMovement)
-		{
-			Character->CharacterMovement->bCheatFlying = true;
-			std::cout << Character->CharacterMovement->IsFlying() << '\n';
-		}
-
 	}
 }
 
@@ -377,15 +443,14 @@ void Cheats::TriggerBot()
 
 				if (MiscSettings.TriggerBotUsesSilentAim && GVars.ReadyOrNotChar->GetEquippedWeapon())
 				{
-					GVars.ReadyOrNotChar->GetEquippedWeapon()->Server_OnFire(FRotator(), HitResult.ImpactPoint, 0);
+					GVars.ReadyOrNotChar->GetEquippedWeapon()->OnFire(FRotator(), HitResult.ImpactPoint);
 					return;
 				}
 				if (GVars.ReadyOrNotChar->GetEquippedWeapon())
 				{
-					GVars.ReadyOrNotChar->GetEquippedWeapon()->Server_OnFire(
+					GVars.ReadyOrNotChar->GetEquippedWeapon()->OnFire(
 						GVars.PlayerController->PlayerCameraManager->GetCameraRotation(), // Direction: if we don't set this the bullet just chills
-						GVars.PlayerController->PlayerCameraManager->GetCameraLocation(), // Start location: We set this to the camera location so it looks normal and isn't a silent aim
-						0); // Seed: IDK what it does so we just ignore it
+						GVars.PlayerController->PlayerCameraManager->GetCameraLocation()); // Start location
 					return;
 				}
 			}
@@ -562,4 +627,20 @@ void Cheats::ListPlayers()
 		}
 	}
 	ImGui::End();
+}
+
+void Cheats::NoClipToggle()
+{
+	if (!GVars.ReadyOrNotChar || !GVars.PlayerController)
+	{
+		Utils::Error("[ERROR]: NoClipToggle ; Invalid Player Character or Controller");
+		return;
+	}
+
+	GVars.ReadyOrNotChar->GetMovementComponent()->MovementState.bCanFly = true;
+	auto* RONMovementComponent = GVars.ReadyOrNotChar->CharacterMovement;
+	auto* RONCharacter = GVars.ReadyOrNotChar;
+
+	RONMovementComponent->SetMovementMode(EMovementMode::MOVE_Flying, 5);
+	RONCharacter->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 }

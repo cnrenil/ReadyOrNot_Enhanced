@@ -19,6 +19,8 @@ bool init = false;
 
 int Frames = 0;
 
+float FireRate = 1;
+
 std::atomic<int> g_PresentCount{ 0 };
 std::atomic<bool> Cleaning{ false };
 std::atomic<bool> Resizing{ false };
@@ -208,21 +210,30 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			if (ImGui::BeginTabItem("Weapon"))
 			{
 				if (ImGui::Checkbox("Infinite Ammo", &CVars.InfAmmo))
-				{
 					Cheats::ToggleInfAmmo();
-				}
 				HostOnlyTooltip();
 
-				if (ImGui::Button("Upgrade Weapon"))
-				{
-					Cheats::UpgradeWeaponStats();
-				}
-				AddDefaultTooltip("Removes recoil & spread, adds auto-fire, and boosts fire rate.");
+				if (ImGui::Button("Remove Recoil"))
+					Cheats::RemoveRecoil();
+				
+				if (ImGui::Button("Remove Spread"))
+					Cheats::RemoveSpread();
+
+				if (ImGui::Button("Add Auto Fire"))
+					Cheats::AddAutoFire();
+
+				if (ImGui::Button("Add Penetration"))
+					Cheats::PenetrateWalls();
+
+				if (ImGui::Button("Insta Kill"))
+					Cheats::InstaKill();
+
+				if (ImGui::Button("Increase Fire Rate"))
+					Cheats::SetFireRate(0.001f);
+				
 
 				if (ImGui::Button("Add Magazine"))
-				{
 					Cheats::AddMag();
-				}
 
 				ImGui::Checkbox("TriggerBot", &CVars.TriggerBot);
 
@@ -232,40 +243,29 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			if (ImGui::BeginTabItem("World"))
 			{
 				if (ImGui::Button("Kill All Suspects"))
-				{
 					Cheats::KillAll(ETeam::TEAM_SUSPECT);
-				}
 				ImGui::SameLine();
+
 				if (ImGui::Button("Kill All Civilians"))
-				{
 					Cheats::KillAll(ETeam::TEAM_CIVILIAN);
-				}
 				HostOnlyTooltip();
+
 				if (ImGui::Button("Arrest All Suspects"))
-				{
 					Cheats::ArrestAll(ETeam::TEAM_SUSPECT);
-				}
 				ImGui::SameLine();
+
 				if (ImGui::Button("Arrest All Civilians"))
-				{
 					Cheats::ArrestAll(ETeam::TEAM_CIVILIAN);
-				}
 				AddDefaultTooltip("This will also automatically report them.");
 
 				if (ImGui::Button("Collect All Evidence"))
-				{
 					Cheats::GetAllEvidence();
-				}
 
 				if (ImGui::Button("AutoWin"))
-				{
 					Cheats::AutoWin();
-				}
 
 				if (ImGui::Button("Unlock All Doors"))
-				{
 					Cheats::UnlockDoors();
-				}
 
 				ImGui::EndTabItem();
 			}
@@ -275,26 +275,20 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 
 				if (ImGui::Button("Save Settings"))
-				{
 					SaveSettings();
-				}
 				ImGui::SameLine();
+
 				if (ImGui::Button("Load Settings"))
-				{
 					LoadSettings();
-				}
 				AddDefaultTooltip("These only save and load the configs not which cheats are enabled.");
 
 				ImGui::Checkbox("Debug", &CVars.Debug);
 				AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
 
 				if (CVars.Debug)
-				{
 					if (ImGui::Button("Print Actors"))
-					{
 						Utils::PrintActors(nullptr);
-					}
-				}
+
 				ImGui::EndTabItem();
 			}
 
@@ -557,7 +551,8 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			{
 				if (ImGui::BeginTabItem("Secret Features"))
 				{
-					ImGui::Checkbox("NoClip", &CVars.NoClip);
+					if (ImGui::Checkbox("NoClip", &CVars.NoClip))
+						Cheats::NoClipToggle();
 					AddDefaultTooltip("Doesn't work currently.");
 					HostOnlyTooltip();
 
@@ -605,9 +600,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 	if (CVars.Aimbot)
 		Cheats::Aimbot();
-
-	if (CVars.NoClip)
-		Cheats::UpdateNoClip();
 
 	if (CVars.TriggerBot)
 		Cheats::TriggerBot();
@@ -903,18 +895,22 @@ void Cleanup(HMODULE hModule)
 
 	// Clean up DirectX resources
 	if (Engine::pRenderTargetView) {
+		printf("Releasing render target view...\n");
 		Engine::pRenderTargetView->Release();
 		Engine::pRenderTargetView = nullptr;
 	}
 	if (Engine::pContext) {
+		printf("Releasing device context...\n");
 		Engine::pContext->Release();
 		Engine::pContext = nullptr;
 	}
 	if (Engine::pDevice) {
+		printf("Releasing device...\n");
 		Engine::pDevice->Release();
 		Engine::pDevice = nullptr;
 	}
 	if (Engine::pSwapChain) {
+		printf("Releasing swap chain...\n");
 		Engine::pSwapChain->Release();
 		Engine::pSwapChain = nullptr;
 	}

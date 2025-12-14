@@ -316,3 +316,8 @@ bool Utils::InFOV(AActor* Actor, float MaxFOV)
     float Dot = Actor->GetDotProductTo(GVars.ReadyOrNotChar);
     return Dot >= CosHalfFOV;
 }
+
+void Utils::Error(std::string msg)
+{
+    printf("[Error] %s\n", msg.c_str());
+}

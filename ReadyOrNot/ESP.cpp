@@ -313,8 +313,8 @@ void Cheats::RenderESP()
                 float boxWidth = 0.0f;
                 float boxHeight = 0.0f;
 
-                if (!bTopOnScreen && !bBottomOnScreen && !bTopOnScreen && !bBottomOnScreen)
-                    continue;
+                //if (!bTopOnScreen && !bBottomOnScreen && !bTopOnScreen && !bBottomOnScreen)
+                    //continue;
            
                 if (bTopOnScreen && bBottomOnScreen)
                 {
@@ -343,8 +343,8 @@ void Cheats::RenderESP()
                 boxWidth += padding;
                 boxHeight += padding;
 
-                boxHeight = std::clamp(boxHeight, 10.0f, 10000.0f);
-                boxWidth = std::clamp(boxWidth, 5.0f, 10000.0f);
+                boxHeight = std::clamp(boxHeight, 10.0f, 1000.0f);
+                boxWidth = std::clamp(boxWidth, 5.0f, 100.0f);
 
                 FVector2D ScreenOrigin;
                 bool bOriginOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(BoundsOrigin, &ScreenOrigin, true);
@@ -364,6 +364,8 @@ void Cheats::RenderESP()
                     GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true);
                     rectCenter = ImVec2(ActorScreen.X, ActorScreen.Y);
                 }
+
+				//if (rectCenter.x == 0.f && rectCenter.y == 0.f or rectCenter.x > ViewportX or rectCenter.y > ViewportY) continue;
 
                 ImGui::GetBackgroundDrawList()->AddRect(
                     ImVec2(rectCenter.x - boxWidth / 2.f, rectCenter.y - boxHeight / 2.f),

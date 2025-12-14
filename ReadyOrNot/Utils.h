@@ -2,6 +2,7 @@
 #include "SDK/Engine_classes.hpp"
 #include "SDK/ReadyOrNot_classes.hpp"
 #include "ImGui/imgui.h"
+#include <string>
 
 using namespace SDK;
 
@@ -82,6 +83,7 @@ struct Utils
 	static FRotator GetRotationToTarget(const FVector& Start, const FVector& Target);
 	static FVector2D ImVec2ToFVector2D(ImVec2 Vector);
 	static bool InFOV(AActor* Actor, float MaxFOV);
+	static void Error(std::string msg);
 };
 
 struct Variables
