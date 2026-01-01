@@ -173,7 +173,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			if (ImGui::BeginTabItem("About"))
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
-				ImGui::Text("Version 2.4");
+				ImGui::Text("Version 2.4.1");
 				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
