@@ -203,6 +203,8 @@ void Cheats::RenderESP()
 
         if (!TargetActor) continue;
 
+        if (GVars.ReadyOrNotChar && GVars.ReadyOrNotChar == TargetActor) continue;
+
         if (!IsSwat && TargetActor->IsSuspect())
             IsSuspect = true;
         else
@@ -291,16 +293,16 @@ void Cheats::RenderESP()
                     );
                 }
             }
-            if (ESPSettings.ShowBox && Utils::InFOV(TargetActor, GVars.POV->FOV))
+            if (ESPSettings.ShowBox)
             {
                 FVector BoundsOrigin;
                 FVector BoundsExtent;
-                Actor->GetActorBounds(true, &BoundsOrigin, &BoundsExtent, false);
+                TargetActor->GetActorBounds(true, &BoundsOrigin, &BoundsExtent, false);
 
                 FVector WorldTop = BoundsOrigin + FVector(0.f, 0.f, BoundsExtent.Z);
                 FVector WorldBottom = BoundsOrigin - FVector(0.f, 0.f, BoundsExtent.Z);
 
-                FVector ActorRight = Actor->GetActorRightVector();
+                FVector ActorRight = TargetActor->GetActorRightVector();
                 FVector WorldLeft = BoundsOrigin - ActorRight * BoundsExtent.Y;
                 FVector WorldRight = BoundsOrigin + ActorRight * BoundsExtent.Y;
 
@@ -313,8 +315,8 @@ void Cheats::RenderESP()
                 float boxWidth = 0.0f;
                 float boxHeight = 0.0f;
 
-                //if (!bTopOnScreen && !bBottomOnScreen && !bTopOnScreen && !bBottomOnScreen)
-                    //continue;
+                if (!bTopOnScreen && !bBottomOnScreen && !bTopOnScreen && !bBottomOnScreen)
+                    continue;
            
                 if (bTopOnScreen && bBottomOnScreen)
                 {
@@ -328,7 +330,7 @@ void Cheats::RenderESP()
 
                 if (boxHeight <= 0.0f || boxWidth <= 0.0f)
                 {
-                    float distance = GVars.PlayerController->GetDistanceTo(Actor);
+                    float distance = GVars.PlayerController->GetDistanceTo(TargetActor);
                     if (distance <= 20) distance = 1.0f;
 
                     const float baseScale = 200000.0f;
@@ -365,8 +367,6 @@ void Cheats::RenderESP()
                     rectCenter = ImVec2(ActorScreen.X, ActorScreen.Y);
                 }
 
-				//if (rectCenter.x == 0.f && rectCenter.y == 0.f or rectCenter.x > ViewportX or rectCenter.y > ViewportY) continue;
-
                 ImGui::GetBackgroundDrawList()->AddRect(
                     ImVec2(rectCenter.x - boxWidth / 2.f, rectCenter.y - boxHeight / 2.f),
                     ImVec2(rectCenter.x + boxWidth / 2.f, rectCenter.y + boxHeight / 2.f),
@@ -376,6 +376,23 @@ void Cheats::RenderESP()
                     1.5f
                 );
             }
+            if (ESPSettings.ShowEnemyDistance)
+            {
+                FVector ActorLocation = TargetActor->K2_GetActorLocation();
+				float Distance = GVars.POV->Location.GetDistanceToInMeters(ActorLocation);
+                if (Distance < 0.0f) continue;
+                FVector2D DistanceScreen;
+                if (GVars.PlayerController->ProjectWorldLocationToScreen(ActorLocation, &DistanceScreen, true))
+                {
+                    char DistanceText[32];
+                    snprintf(DistanceText, sizeof(DistanceText), "%.1f m", Distance);
+                    ImGui::GetBackgroundDrawList()->AddText(
+                        ImVec2(DistanceScreen.X, DistanceScreen.Y + 35),
+                        RenderColor,
+                        DistanceText
+                    );
+                }
+			}
             if (ESPSettings.ShowTeam && IsPlayer && TargetActor && TargetActor->PlayerState && TargetActor->PlayerState->GetPlayerName() && GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true))
             {
                 ImGui::GetBackgroundDrawList()->AddText(

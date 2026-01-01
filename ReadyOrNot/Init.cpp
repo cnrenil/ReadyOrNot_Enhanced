@@ -2,19 +2,20 @@
 
 DXGI_SWAP_CHAIN_DESC Engine::sd = {};
 Engine::tPresent Engine::oPresent = nullptr;
+LPVOID Engine::PresentAddr = nullptr;
 IDXGISwapChain* Engine::pSwapChain = nullptr;
 ID3D11Device* Engine::pDevice = nullptr;
 ID3D11DeviceContext* Engine::pContext = nullptr;
 ID3D11RenderTargetView* Engine::pRenderTargetView = nullptr;
 Engine::tResizeBuffers Engine::oResizeBuffers;
 
-bool HookSwapChain();
+void** HookSwapChain();
 bool HookPresent();
 bool HookResizeBuffers();
 
 bool Engine::Init()
 {
-	if (!HookSwapChain() || !HookPresent() || !HookResizeBuffers())
+	if (!HookPresent() || !HookResizeBuffers())
 		return false;
 	return true;
 }
@@ -37,6 +38,12 @@ bool Engine::InitImGui()
 	// Setup ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+
+	if (!ImGui::GetCurrentContext()) 
+	{
+		std::cout << "[ERROR] ImGui::CreateContext failed\n";
+		return false;
+	}
 
 	// Setup Platform/Renderer backends
 	if (!ImGui_ImplWin32_Init(hwnd)) {
@@ -85,63 +92,81 @@ bool HookResizeBuffers()
 	if (!Engine::pSwapChain) return false;
 
 	void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
-	Engine::oResizeBuffers = (Engine::tResizeBuffers)vTable[13];  // store original
+	Engine::oResizeBuffers = (Engine::tResizeBuffers)vTable[13]; // store original
 
 	DWORD oldProtect;
 	VirtualProtect(&vTable[13], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-	vTable[13] = (void*)&Engine::hkResizeBuffers;        // replace with my hook
+	vTable[13] = (void*)&Engine::hkResizeBuffers; // replace with my hook
 	VirtualProtect(&vTable[13], sizeof(void*), oldProtect, &oldProtect);
 	return true;
 }
 
-// Attach hook
 bool HookPresent()
-{
-	if (!Engine::pSwapChain) {
-		std::cout << "[ERROR] SwapChain is null...\n";
-		Sleep(30);
-		return false;
-	}
-
-	void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
-	Engine::oPresent = (Engine::tPresent)vTable[8];		// store original
-
-	DWORD oldProtect;
-	VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-	vTable[8] = (void*)&Engine::hkPresent;		// replace with my hook
-	VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
-	return true;
-}
-
-bool HookSwapChain()
 {
 	ZeroMemory(&Engine::sd, sizeof(DXGI_SWAP_CHAIN_DESC));
 	Engine::sd.BufferCount = 1;
 	Engine::sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Engine::sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	Engine::sd.OutputWindow = FindWindow(L"UnrealWindow", nullptr); //! Fix: Add Window Name to prevent having two windows with same class causing issues; Never mind I am too lazy
+	Engine::sd.OutputWindow = CreateWindowA("STATIC", "DXGI Window", WS_OVERLAPPEDWINDOW, 0, 0, 100, 100, nullptr, nullptr, nullptr, nullptr);
 	Engine::sd.SampleDesc.Count = 1;
 	Engine::sd.SampleDesc.Quality = 0;
 	Engine::sd.Windowed = TRUE;
 	Engine::sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	Engine::sd.BufferDesc.Width = 1;
+	Engine::sd.BufferDesc.Height = 1;
+	Engine::sd.BufferDesc.RefreshRate.Numerator = 60;
+	Engine::sd.BufferDesc.RefreshRate.Denominator = 1;
+
+	if (!Engine::sd.OutputWindow)
+		return false;
 
 	D3D_FEATURE_LEVEL FeatureLevel;
 	D3D_FEATURE_LEVEL FeatureLevelsRequested = D3D_FEATURE_LEVEL_11_0;
 
-	while (!Engine::pSwapChain) {
+	if (!Engine::pSwapChain) {
 		if (SUCCEEDED(D3D11CreateDeviceAndSwapChain(
 			nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0,
 			&FeatureLevelsRequested, 1, D3D11_SDK_VERSION,
 			&Engine::sd, &Engine::pSwapChain, &Engine::pDevice, &FeatureLevel, &Engine::pContext)))
 		{
-			//void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+			// void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
 			// Present = vTable[8]
 			// ResizeBuffers = vTable[13]
+
+			void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+
+			DestroyWindow(Engine::sd.OutputWindow);
+
+			if (!vTable)
+			{
+				printf("[ERROR] Failed to get SwapChain vTable...\n");
+				return false;
+			}
+			
+			Engine::PresentAddr = (LPVOID)vTable[8];
+			Engine::oPresent = (Engine::tPresent)vTable[8]; // store original
+
+			MH_CreateHook(Engine::PresentAddr, (LPVOID)&Engine::hkPresent, reinterpret_cast<LPVOID*>(&Engine::oPresent));
+			MH_EnableHook(Engine::PresentAddr);
+
+			//DWORD oldProtect;
+			//VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+			//vTable[8] = (void*)&Engine::hkPresent; // replace with my hook
+			//VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
+
+			Engine::pSwapChain->Release();
+			Engine::pContext->Release();
+			Engine::pDevice->Release();
+			
 			return true;
 		}
 		else
 		{
+			DestroyWindow(Engine::sd.OutputWindow);
+
 			return false;
 		}
+
 	}
+	return false;
 }

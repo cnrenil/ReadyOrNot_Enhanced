@@ -18,7 +18,7 @@ void Cheats::Aimbot()
 	if (AimbotSettings.RequireKeyHeld && !AimbotKeyDown)
 		return;
 
-	std::wstring WideString = UtfN::StringToWString(AimbotSettings.TargetBone);
+	std::wstring WideString = UtfN::StringToWString(TextVars.AimbotBone);
 	FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
 
 	AActor* Target = Utils::GetBestTarget(
@@ -28,7 +28,7 @@ void Cheats::Aimbot()
 		AimbotSettings.TargetDead,
 		AimbotSettings.MaxFOV,
 		AimbotSettings.LOS,
-		AimbotSettings.TargetBone,
+		TextVars.AimbotBone,
 		AimbotSettings.TargetAll);
 
 	if (!Target) return;

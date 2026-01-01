@@ -53,8 +53,6 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
 
-
-
 HRESULT __stdcall Engine::hkResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
 {
 	Resizing.store(true);
@@ -105,10 +103,16 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 		}
 	}
 
+	if (Frames % 300 == 0 && MiscSettings.ShouldAutoSave) // Every 300 frames, save settings
+	{
+		SaveSettings();
+	}
+
 	if (!init)
 	{
 		if (SUCCEEDED(SwapChain->GetDevice(__uuidof(ID3D11Device), (void**)&Engine::pDevice)))
 		{
+			std::cout << "[hkPresent] Device acquired successfully\n";
 			HWND hwnd = FindWindow(L"UnrealWindow", nullptr);
 			Engine::pDevice->GetImmediateContext(&Engine::pContext);
 
@@ -126,6 +130,9 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 			init = true;
 		}
+		else
+			printf("[INFO] Not DX11 (likely DX12)\n");
+
 		if (GVars.PlayerController && GVars.PlayerController->PlayerState)
 		{
 			auto PlayerState = GVars.PlayerController->PlayerState;
@@ -133,15 +140,16 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			if (PlayerName == "PeachMarrow12" || PlayerName == "DiaperBlastrPC")
 				CVars.SecretFeatures = true;
 		}
-
-		MiscSettings.SpamText.reserve(512);
 	}
 
 	if (!Engine::oPresent)
 		return 0;
 
 	if (!ImGui::GetCurrentContext())
+	{
+		printf("[ERROR] ImGui context not found!\n");
 		return Engine::oPresent(SwapChain, SyncInterval, Flags);
+	}
 
 	if (GVars.ScreenSize.x != ImGui::GetIO().DisplaySize.x || GVars.ScreenSize.y != ImGui::GetIO().DisplaySize.y)
 	{
@@ -156,7 +164,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 	if (ShowMenu) {
 		ImGui::Begin("Free Ready or Not Cheat by PeachMarrow12", nullptr, ImGuiWindowFlags_NoCollapse);
 
-
 		ImGui::SeparatorText("Hello, Have Fun Cheating!");
 
 		if  (ImGui::BeginTabBar("MainTabBar"))
@@ -164,7 +171,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			if (ImGui::BeginTabItem("About"))
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
-				ImGui::Text("Version 2.0");
+				ImGui::Text("Version 2.4");
 				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
@@ -278,12 +285,19 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					SaveSettings();
 				ImGui::SameLine();
 
+				ImGui::Checkbox("Should Auto Save Settings", &MiscSettings.ShouldAutoSave);
+				ImGui::SameLine();
+				ImGui::Checkbox("Should Save Enabled Cheats", &MiscSettings.ShouldSaveCVars);
+
 				if (ImGui::Button("Load Settings"))
 					LoadSettings();
 				AddDefaultTooltip("These only save and load the configs not which cheats are enabled.");
 
 				ImGui::Checkbox("Debug", &CVars.Debug);
 				AddDefaultTooltip("This just enables options in the menu I use for finding bugs and useful information. This is most likely useless to you.");
+
+				ImGui::InputText("Debug Func Name Must Include", &TextVars.DebugFunctionNameMustInclude);
+				ImGui::InputText("Debug Func Obj Name Must Include", &TextVars.DebugFunctionObjectMustInclude);
 
 				if (CVars.Debug)
 					if (ImGui::Button("Print Actors"))
@@ -321,14 +335,14 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 					ImGui::Checkbox("Draw FOV", &AimbotSettings.DrawFOV);
 
-					if (ImGui::BeginCombo("Target Bone", AimbotSettings.TargetBone.c_str()))
+					if (ImGui::BeginCombo("Target Bone", TextVars.AimbotBone.c_str()))
 					{
 						for (int i = 0; i < IM_ARRAYSIZE(BoneOptions); i++)
 						{
-							bool is_selected = (AimbotSettings.TargetBone == BoneOptions[i].second);
+							bool is_selected = (TextVars.AimbotBone == BoneOptions[i].second);
 							if (ImGui::Selectable(BoneOptions[i].first, is_selected))
 							{
-								AimbotSettings.TargetBone = BoneOptions[i].second;
+								TextVars.AimbotBone = BoneOptions[i].second;
 							}
 							if (is_selected)
 								ImGui::SetItemDefaultFocus(); // make the selected item visible
@@ -370,6 +384,8 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					ImGui::Checkbox("Show Box", &ESPSettings.ShowBox);
 
 					ImGui::Checkbox("Show Traps", &ESPSettings.ShowTraps);
+
+					ImGui::Checkbox("Show Enemy Distance", &ESPSettings.ShowEnemyDistance);
 
 					ImGui::Checkbox("Show Bones", &ESPSettings.Bones);
 
@@ -425,14 +441,14 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 					ImGui::SliderFloat("Hit Chance", &SilentAimSettings.HitChance, 0.0f, 100, "%.1f");
 
-					if (ImGui::BeginCombo("Target Bone", SilentAimSettings.TargetBone.c_str()))
+					if (ImGui::BeginCombo("Target Bone", TextVars.SilentAimBone.c_str()))
 					{
 						for (int i = 0; i < IM_ARRAYSIZE(BoneOptions); i++)
 						{
-							bool is_selected = (SilentAimSettings.TargetBone == BoneOptions[i].second);
+							bool is_selected = (TextVars.SilentAimBone == BoneOptions[i].second);
 							if (ImGui::Selectable(BoneOptions[i].first, is_selected))
 							{
-								SilentAimSettings.TargetBone = BoneOptions[i].second;
+								TextVars.SilentAimBone = BoneOptions[i].second;
 							}
 							if (is_selected)
 								ImGui::SetItemDefaultFocus(); // make the selected item visible
@@ -469,8 +485,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					ImGui::SeparatorText("Other");
 
 					ImGui::Checkbox("Show Enabled Options", &CVars.RenderOptions);
-
-					ImGui::Checkbox("Promote when Spamming", &MiscSettings.Promote);
 
 					ImGui::Checkbox("List Players", &CVars.ListPlayers);
 
@@ -551,15 +565,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			{
 				if (ImGui::BeginTabItem("Secret Features"))
 				{
-					if (ImGui::Checkbox("NoClip", &CVars.NoClip))
-						Cheats::NoClipToggle();
-					AddDefaultTooltip("Doesn't work currently.");
-					HostOnlyTooltip();
 
-					ImGui::Checkbox("Spam", &CVars.Spam);
-					ImGui::SameLine();
-					ImGui::InputText("Spam Text", &MiscSettings.SpamText);
-					AddDefaultTooltip("Spams the text in chat. Has a heavy hit to performance due to me being horrible at coding.");
 					ImGui::EndTabItem();
 				}
 			}
@@ -593,7 +599,34 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 		Cheats::RenderESP();
 
 	if (CVars.SilentAim)
-		Cheats::SilentAim();
+	{
+		if (SilentAimSettings.DrawFOV)
+			Utils::DrawFOV(SilentAimSettings.MaxFOV, SilentAimSettings.FOVThickness);
+
+		AActor* TargetActor =
+			Utils::GetBestTarget(
+				SilentAimSettings.TargetCivilians,
+				SilentAimSettings.TargetArrested,
+				SilentAimSettings.TargetSurrendered,
+				SilentAimSettings.TargetDead,
+				SilentAimSettings.MaxFOV,
+				SilentAimSettings.RequiresLOS,
+				TextVars.SilentAimBone,
+				SilentAimSettings.TargetAll);
+
+		if (TargetActor)
+		{
+			auto* RONC = GVars.ReadyOrNotChar;
+
+			std::wstring WideString = UtfN::StringToWString(TextVars.SilentAimBone);
+			FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
+
+			FVector TargetLocation = ((AReadyOrNotCharacter*)TargetActor)->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
+
+			if (SilentAimSettings.DrawArrow)
+				Utils::DrawSnapLine(TargetLocation, SilentAimSettings.ArrowThickness);
+		}
+	}
 
 	if (CVars.Reticle)
 		Cheats::DrawReticle();
@@ -606,9 +639,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 	if (CVars.SpeedEnabled)
 		Cheats::SetPlayerSpeed();
-
-	if (CVars.Spam)
-		Cheats::Spam();
 
 	if (Engine::pRenderTargetView) {
 		Engine::pContext->OMSetRenderTargets(1, &Engine::pRenderTargetView, nullptr);
@@ -647,38 +677,44 @@ DWORD MainThread(HMODULE hModule)
 	AllocConsole();
 	FILE* Dummy;
 	freopen_s(&Dummy, "CONOUT$", "w", stdout);
-	freopen_s(&Dummy, "CONIN$", "r", stdin);
 
 	std::cout << "Cheat Injecting...\n";
 
-	int FailAmount = 0;
+	int Attempts = 0;
 
-	while (!GVars.World and FailAmount < 8) {
-		GVars.World = Utils::GetWorldSafe();
-		FailAmount++;
+	while (!UEngine::GetEngine() && Attempts < 50)
+	{
+		Attempts++;
+		printf("Waiting for game to load...\n");
 		Sleep(100);
 	}
 
-	while (!GVars.PlayerController and FailAmount < 8) {
-		GVars.PlayerController = Utils::GetPlayerController();
-		FailAmount++;
-		Sleep(100);
-	}
-
-	if (FailAmount >= 8) {
-		std::cout << "[ERROR] Failed to get essential game pointers. Exiting...\n";
+	MH_STATUS Status = MH_Initialize();
+	if (Status != MH_OK)
+	{
+		printf("[ERROR] MinHook failed to init: %d", Status);
 		Cleaning.store(true);
-		Sleep(200);
 		Cleanup(hModule);
-		return 0;
 	}
-	Sleep(1000); // Wait a second to ensure everything is loaded
 
-	Engine::Init();
+	Sleep(1000); // Wait a second to ensure everything is loaded	
+
+	if (!Engine::Init())
+	{
+		printf("[ERROR] Failed to initialize engine hooks.\n");
+		Cleaning.store(true);
+		Cleanup(hModule);
+	}
+	else
+		printf("Engine hooks initialized successfully.\n");
+
+	Sleep(1000); // Wait a second to ensure everything is loaded	
 
 	std::cout << "Cheat Injected\n";
 
 	LoadSettings();
+
+	Hooks::HookProcessEvent();
 
 	while (!Cleaning.load())
 	{
@@ -727,123 +763,132 @@ void SaveSettings()
 	if (!Settings.ShouldSave)
 		return;
 
-	std::ofstream file("settings.txt", std::ios::trunc);
+	// Save MiscSettings (binary)
+	std::ofstream MiscSettingsfile("MiscSettings.bin", std::ios::binary);
+	if (MiscSettingsfile.is_open())
+	{
+		MiscSettingsfile.write(reinterpret_cast<char*>(&MiscSettings), sizeof(MiscSettings));
+		MiscSettingsfile.close();
+	}
 
-	if (!file.is_open()) return;
+	// Save AimbotSettings (binary)
+	std::ofstream AimbotSettingsfile("AimbotSettings.bin", std::ios::binary);
+	if (AimbotSettingsfile.is_open())
+	{
+		AimbotSettingsfile.write(reinterpret_cast<char*>(&AimbotSettings), sizeof(AimbotSettings));
+		AimbotSettingsfile.close();
+	}
 
-	file.seekp(0);
+	// Save ESPSettings (binary)
+	std::ofstream ESPSettingsfile("ESPSettings.bin", std::ios::binary);
+	if (ESPSettingsfile.is_open())
+	{
+		ESPSettingsfile.write(reinterpret_cast<char*>(&ESPSettings), sizeof(ESPSettings));
+		ESPSettingsfile.close();
+	}
 
-	file << ESPSettings.ShowTeam << '\n';
-	file << ESPSettings.ShowBox << '\n';
-	file << ESPSettings.SuspectColor.x << '\n' << ESPSettings.SuspectColor.y << '\n' << ESPSettings.SuspectColor.z << '\n' << ESPSettings.SuspectColor.w << '\n';
-	file << ESPSettings.CivilianColor.x << '\n' << ESPSettings.CivilianColor.y << '\n' << ESPSettings.CivilianColor.z << '\n' << ESPSettings.CivilianColor.w << '\n';
-	file << ESPSettings.DeadColor.x << '\n' << ESPSettings.DeadColor.y << '\n' << ESPSettings.DeadColor.z << '\n' << ESPSettings.DeadColor.w << '\n';
-	file << ESPSettings.TeamColor.x << '\n' << ESPSettings.TeamColor.y << '\n' << ESPSettings.TeamColor.z << '\n' << ESPSettings.TeamColor.w << '\n';
-	file << ESPSettings.ArrestColor.x << '\n' << ESPSettings.ArrestColor.y << '\n' << ESPSettings.ArrestColor.z << '\n' << ESPSettings.ArrestColor.w << '\n';
-	file << ESPSettings.ShowObjectives << '\n';
-	file << AimbotSettings.MaxFOV << '\n';
-	file << AimbotSettings.LOS << '\n';
-	file << AimbotSettings.TargetCivilians << '\n';
-	file << AimbotSettings.TargetDead << '\n';
-	file << AimbotSettings.TargetArrested << '\n';
-	file << AimbotSettings.MinDistance << '\n';
-	file << AimbotSettings.Smooth << '\n';
-	file << AimbotSettings.SmoothingVector << '\n';
-	file << AimbotSettings.DrawArrow << '\n';
-	file << AimbotSettings.DrawFOV << '\n';
-	file << MiscSettings.Reticle << '\n';
-	file << MiscSettings.ReticleColor.x << '\n' << MiscSettings.ReticleColor.y << '\n' << MiscSettings.ReticleColor.z << '\n' << MiscSettings.ReticleColor.w << '\n';
-	file << MiscSettings.ReticlePosition.x << '\n' << MiscSettings.ReticlePosition.y << '\n';
-	file << MiscSettings.ReticleSize << '\n';
-	file << CVars.RenderOptions << '\n';
-	file << MiscSettings.SpamText << '\n';
-	file << MiscSettings.Promote << '\n';
-	file << CVars.ListPlayers << '\n';
-	file << AimbotSettings.TargetBone << '\n';
-	file << AimbotSettings.RequireKeyHeld << '\n';
-	file << ESPSettings.ShowTraps << '\n';
-	file << ((int&)AimbotSettings.AimbotKey) << '\n';
-	file << SilentAimSettings.TargetCivilians << '\n';
-	file << SilentAimSettings.TargetAll << '\n';
-	file << SilentAimSettings.TargetDead << '\n';
-	file << SilentAimSettings.TargetSurrendered << '\n';
-	file << SilentAimSettings.TargetArrested << '\n';
-	file << SilentAimSettings.MaxFOV << '\n';
-	file << SilentAimSettings.DrawFOV << '\n';
-	file << SilentAimSettings.FOVThickness << '\n';
-	file << SilentAimSettings.DrawArrow << '\n';
-	file << SilentAimSettings.ArrowThickness << '\n';
-	file << SilentAimSettings.RequiresLOS << '\n';
-	file << SilentAimSettings.HitChance << '\n';
-	file << SilentAimSettings.TargetBone << '\n';
-	file << MiscSettings.TriggerBotTargetsCivilians << '\n';
-	file << MiscSettings.TriggerBotUsesSilentAim << '\n';
-	file << MiscSettings.CrossReticle << '\n';
-	file << MiscSettings.ReticleWhenThrowing << '\n';
+	// Save SilentAimSettings (binary)
+	std::ofstream SilentAimSettingsfile("SilentAimSettings.bin", std::ios::binary);
+	if (SilentAimSettingsfile.is_open())
+	{
+		SilentAimSettingsfile.write(reinterpret_cast<char*>(&SilentAimSettings), sizeof(SilentAimSettings));
+		SilentAimSettingsfile.close();
+	}
 
-	file.close();
+	// Save TextVars strings
+	std::ofstream TextVarsfile("TextVars.bin", std::ios::binary);
+	if (TextVarsfile.is_open())
+	{
+		// Save AimbotBone
+		size_t len = TextVars.AimbotBone.size();
+		TextVarsfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+		TextVarsfile.write(TextVars.AimbotBone.data(), len);
+
+		// Save SilentAimBone
+		len = TextVars.SilentAimBone.size();
+		TextVarsfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+		TextVarsfile.write(TextVars.SilentAimBone.data(), len);
+
+		len = TextVars.DebugFunctionNameMustInclude.size();
+		TextVarsfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+		TextVarsfile.write(TextVars.DebugFunctionNameMustInclude.data(), len);
+
+		len = TextVars.DebugFunctionObjectMustInclude.size();
+		TextVarsfile.write(reinterpret_cast<char*>(&len), sizeof(len));
+		TextVarsfile.write(TextVars.DebugFunctionObjectMustInclude.data(), len);
+
+		TextVarsfile.close();
+	}
 }
+
 
 void LoadSettings()
 {
 	if (!Settings.ShouldLoad)
 		return;
 
-	std::ifstream infile("settings.txt");
+	std::ifstream MiscSettingsinfile("MiscSettings.bin", std::ios::binary);
 
-	if (!infile.is_open()) return;
+	if (!MiscSettingsinfile.is_open()) return;
 
-	infile.seekg(0);
+	MiscSettingsinfile.seekg(0);
 
-	infile >> ESPSettings.ShowTeam;
-	infile >> ESPSettings.ShowBox;
-	infile >> ESPSettings.SuspectColor.x >> ESPSettings.SuspectColor.y >> ESPSettings.SuspectColor.z >> ESPSettings.SuspectColor.w;
-	infile >> ESPSettings.CivilianColor.x >> ESPSettings.CivilianColor.y >> ESPSettings.CivilianColor.z >> ESPSettings.CivilianColor.w;
-	infile >> ESPSettings.DeadColor.x >> ESPSettings.DeadColor.y >> ESPSettings.DeadColor.z >> ESPSettings.DeadColor.w;
-	infile >> ESPSettings.TeamColor.x >> ESPSettings.TeamColor.y >> ESPSettings.TeamColor.z >> ESPSettings.TeamColor.w;
-	infile >> ESPSettings.ArrestColor.x >> ESPSettings.ArrestColor.y >> ESPSettings.ArrestColor.z >> ESPSettings.ArrestColor.w;
-	infile >> ESPSettings.ShowObjectives;
-	infile >> AimbotSettings.MaxFOV;
-	infile >> AimbotSettings.LOS;
-	infile >> AimbotSettings.TargetCivilians;
-	infile >> AimbotSettings.TargetDead;
-	infile >> AimbotSettings.TargetArrested;
-	infile >> AimbotSettings.MinDistance;
-	infile >> AimbotSettings.Smooth;
-	infile >> AimbotSettings.SmoothingVector;
-	infile >> AimbotSettings.DrawArrow;
-	infile >> AimbotSettings.DrawFOV;
-	infile >> MiscSettings.Reticle;
-	infile >> MiscSettings.ReticleColor.x >> MiscSettings.ReticleColor.y >> MiscSettings.ReticleColor.z >> MiscSettings.ReticleColor.w;
-	infile >> MiscSettings.ReticlePosition.x >> MiscSettings.ReticlePosition.y;
-	infile >> MiscSettings.ReticleSize;
-	infile >> CVars.RenderOptions;
-	std::getline(infile >> std::ws, MiscSettings.SpamText);
-	infile >> MiscSettings.Promote;
-	infile >> CVars.ListPlayers;
-	infile >> AimbotSettings.TargetBone;
-	infile >> AimbotSettings.RequireKeyHeld;
-	infile >> ESPSettings.ShowTraps;
-	infile >> ((int&)AimbotSettings.AimbotKey);
-	infile >> SilentAimSettings.TargetCivilians;
-	infile >> SilentAimSettings.TargetAll;
-	infile >> SilentAimSettings.TargetDead;
-	infile >> SilentAimSettings.TargetSurrendered;
-	infile >> SilentAimSettings.TargetArrested;
-	infile >> SilentAimSettings.MaxFOV;
-	infile >> SilentAimSettings.DrawFOV;
-	infile >> SilentAimSettings.FOVThickness;
-	infile >> SilentAimSettings.DrawArrow;
-	infile >> SilentAimSettings.ArrowThickness;
-	infile >> SilentAimSettings.RequiresLOS;
-	infile >> SilentAimSettings.HitChance;
-	infile >> SilentAimSettings.TargetBone;
-	infile >> MiscSettings.TriggerBotTargetsCivilians;
-	infile >> MiscSettings.TriggerBotUsesSilentAim;
-	infile >> MiscSettings.CrossReticle;
-	infile >> MiscSettings.ReticleWhenThrowing;
+	MiscSettingsinfile.read(reinterpret_cast<char*>(&MiscSettings), sizeof(MiscSettings));
 
-	infile.close();
+	MiscSettingsinfile.close();
+
+	std::ifstream AimbotSettingsinfile("AimbotSettings.bin", std::ios::binary);
+
+	if (!AimbotSettingsinfile.is_open()) return;
+
+	AimbotSettingsinfile.seekg(0);
+
+	AimbotSettingsinfile.read(reinterpret_cast<char*>(&AimbotSettings), sizeof(AimbotSettings));
+
+	AimbotSettingsinfile.close();
+
+	std::ifstream ESPSettingsinfile("ESPSettings.bin", std::ios::binary);
+
+	if (!ESPSettingsinfile.is_open()) return;
+
+	ESPSettingsinfile.seekg(0);
+
+	ESPSettingsinfile.read(reinterpret_cast<char*>(&ESPSettings), sizeof(ESPSettings));
+
+	ESPSettingsinfile.close();
+
+	std::ifstream SilentAimSettingsinfile("SilentAimSettings.bin", std::ios::binary);
+
+	if (!SilentAimSettingsinfile.is_open()) return;
+
+	SilentAimSettingsinfile.seekg(0);
+
+	SilentAimSettingsinfile.read(reinterpret_cast<char*>(&SilentAimSettings), sizeof(SilentAimSettings));
+
+	SilentAimSettingsinfile.close();
+
+	std::ifstream TextVarsinfile("TextVars.bin", std::ios::binary);
+
+	if (!TextVarsinfile.is_open()) return;
+
+	size_t len;
+	TextVarsinfile.read(reinterpret_cast<char*>(&len), sizeof(len));
+	TextVars.AimbotBone.resize(len);
+	TextVarsinfile.read(TextVars.AimbotBone.data(), len);
+
+	TextVarsinfile.read(reinterpret_cast<char*>(&len), sizeof(len));
+	TextVars.SilentAimBone.resize(len);
+	TextVarsinfile.read(TextVars.SilentAimBone.data(), len);
+
+	TextVarsinfile.read(reinterpret_cast<char*>(&len), sizeof(len));
+	TextVars.DebugFunctionNameMustInclude.resize(len);
+	TextVarsinfile.read(TextVars.DebugFunctionNameMustInclude.data(), len);
+
+	TextVarsinfile.read(reinterpret_cast<char*>(&len), sizeof(len));
+	TextVars.DebugFunctionObjectMustInclude.resize(len);
+	TextVarsinfile.read(TextVars.DebugFunctionObjectMustInclude.data(), len);
+
+	TextVarsinfile.close();
 }
 
 void Cleanup(HMODULE hModule)
@@ -861,12 +906,21 @@ void Cleanup(HMODULE hModule)
 	Cheats::ToggleInfAmmo();
 	Cheats::SetPlayerSpeed();
 
+	if (UEngine::GetEngine())
+	{
+		void** objvTable = *reinterpret_cast<void***>(UEngine::GetEngine());
+		MH_DisableHook(objvTable[Offsets::ProcessEventIdx]);
+		MH_RemoveHook(objvTable[Offsets::ProcessEventIdx]);
+	}
+
+	MH_DisableHook(Engine::PresentAddr);
+	MH_RemoveHook(Engine::PresentAddr);
+
 	while (g_PresentCount.load() > 0)
 		Sleep(1);  // wait until all Present calls finish
 
 	if (ImGui::GetCurrentContext())
 	{
-		ImGui::GetIO().MouseDrawCursor = false;
 		ImGui_ImplDX11_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
@@ -879,19 +933,7 @@ void Cleanup(HMODULE hModule)
 		oWndProc = nullptr;
 	}
 
-	if (Engine::pSwapChain)
-	{
-		void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
-		if (vTable && Engine::oPresent)
-		{
-			DWORD oldProtect;
-			if (VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect))
-			{
-				vTable[8] = (void*)Engine::oPresent;
-				VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
-			}
-		}
-	}
+	MH_Uninitialize();
 
 	// Clean up DirectX resources
 	if (Engine::pRenderTargetView) {

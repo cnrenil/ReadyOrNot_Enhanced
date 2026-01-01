@@ -1,5 +1,15 @@
 #pragma once
 
+//#pragma pack(push, 8)
+#include "SDK/ReadyOrNot_parameters.hpp"
+#include "SDK/ReadyOrNot_classes.hpp"
+#include "SDK/Engine_classes.hpp"
+#include "SDK/CoreUObject_classes.hpp"
+#include "SDK/CoreUObject_parameters.hpp"
+#include "SDK/Engine_parameters.hpp"
+#include "SDK/Basic.hpp"
+//#pragma pack(pop)
+
 #include <d3d11.h>
 #include <dxgi.h>
 #include <Windows.h>
@@ -14,22 +24,24 @@
 #include <chrono>
 #include <imgui_internal.h>
 #include <fstream>
+#include <string>
+#include <unordered_map>
+#include <numbers>
 
+#include "minhook/include/MinHook.h"
 #include "Cheats.h"
 #include "Utils.h"
-#include "SDK/ReadyOrNot_classes.hpp"
-#include "SDK/Engine_classes.hpp"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
-class Engine
+struct Engine
 {
-	public:
 	static bool Init();
 	static bool InitImGui();
 	typedef HRESULT(__stdcall* tPresent)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 	static tPresent oPresent;
+	static LPVOID PresentAddr;
 	static IDXGISwapChain* pSwapChain;
 	static ID3D11Device* pDevice;
 	static ID3D11DeviceContext* pContext;
@@ -50,4 +62,10 @@ class Engine
 
 	static HRESULT __stdcall hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags);
 	static HRESULT __stdcall hkResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags);
+};
+
+struct Hooks
+{
+	static void** vTable;
+	static bool HookProcessEvent();
 };

@@ -1,8 +1,7 @@
 #pragma once
-#include "SDK/Engine_classes.hpp"
-#include "SDK/ReadyOrNot_classes.hpp"
-#include "ImGui/imgui.h"
-#include <string>
+#include "Engine.h"
+
+void cerrf(const char* Format, ...);
 
 using namespace SDK;
 
@@ -82,8 +81,8 @@ struct Utils
 	static ImVec2 FVector2DToImVec2(FVector2D Vector);
 	static FRotator GetRotationToTarget(const FVector& Start, const FVector& Target);
 	static FVector2D ImVec2ToFVector2D(ImVec2 Vector);
-	static bool InFOV(AActor* Actor, float MaxFOV);
 	static void Error(std::string msg);
+
 };
 
 struct Variables

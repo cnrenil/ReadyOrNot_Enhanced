@@ -319,58 +319,6 @@ void Cheats::DrawReticle()
 	}
 }
 
-void Cheats::Spam()
-{
-	if (!CVars.Spam) return;
-	if (!GVars.ReadyOrNotChar || !GVars.ReadyOrNotChar->GetEquippedWeapon() || !GVars.ReadyOrNotChar->PlayerState || !GVars.PlayerController) return;
-
-	// Validate the spam text before processing
-	if (MiscSettings.SpamText.empty() || MiscSettings.SpamText.length() > 255) return;
-
-	// Use stack allocation instead of heap allocation
-	std::wstring WideString = UtfN::StringToWString(MiscSettings.SpamText);
-
-	Msg.Message = WideString.c_str();
-	Msg.SenderName = MiscSettings.Promote ? L"Peachmarrow13 @ Unknowncheats.me" : L"Sigma";
-	Msg.bCommand = false;
-	Msg.AssociatedTeam = ETeamType::TT_SQUAD;
-	Msg.TargetPlayerController = GVars.PlayerController;
-	Msg.TargetTeam = ETeamType::TT_SQUAD;
-	Msg.UniqueNetIdStr = L"";
-	Msg.bKillfeed = false;
-	//Msg.SenderPlayerState = (AReadyOrNotPlayerState*)GVars.ReadyOrNotChar->PlayerState;
-
-	if (GVars.PlayerController->HasAuthority())
-	{
-		// we need to send it to every player individually
-		if (!GVars.Level) return;
-		ActorsCopy = GVars.Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-		if (!ActorsCopy || ActorsCopy.Num() == 0) return;
-		for (AActor* Actor : ActorsCopy)
-		{
-			if (!Utils::IsValidActor(Actor)) continue;
-
-			if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
-			reinterpret_cast<AReadyOrNotPlayerController*>(GVars.PlayerController)->Server_SendChatMessage(Msg);
-		}
-
-	}
-	else
-	{
-		// we need to send it to every player individually
-		if (!GVars.Level) return;
-		ActorsCopy = GVars.Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
-		if (!ActorsCopy || ActorsCopy.Num() == 0) return;
-		for (AActor* Actor : ActorsCopy)
-		{
-			if (!Utils::IsValidActor(Actor)) continue;
-
-			if (!Actor->IsA(AReadyOrNotPlayerController::StaticClass())) continue;
-			reinterpret_cast<AReadyOrNotPlayerController*>(GVars.PlayerController)->SendChatMessage(Msg);
-		}
-	}
-}
-
 void Cheats::GetAllEvidence()
 {
 	if (!GVars.Level) return;
@@ -486,8 +434,6 @@ void Cheats::RenderEnabledOptions()
 		ImGui::TextColored(Color, "No Clip");
 	if (CVars.Reticle)
 		ImGui::TextColored(Color, "Reticle");
-	if (CVars.Spam)
-		ImGui::TextColored(Color, "Spam");
 	if (CVars.TriggerBot)
 		ImGui::TextColored(Color, "Trigger Bot");
 
@@ -517,16 +463,29 @@ void Cheats::AutoWin()
 
 	AReadyOrNotGameState* GameState = GVars.GameState;
 
+	ArrestAll(ETeam::TEAM_CIVILIAN);
+	ArrestAll(ETeam::TEAM_SUSPECT);
+	GetAllEvidence();
+
 	for (AEvidenceActor* Evidence : GameState->AllEvidenceActors)
 	{
 		if (!Evidence) continue;
 		if (Evidence->EvidenceComponent&& Evidence->EvidenceComponent->CanBeCollected())
 		{
-			Evidence->EvidenceComponent->bEvidenceExtracted = true;
-			Evidence->EvidenceComponent->EvidenceState = EEvidenceActorState::Collected;
+			for (FScoreBonus& Bonus : Evidence->ScoringComponent->ScoringData.Bonuses)
+			{
+				Bonus.bEnabled = true;
+				Bonus.bGiven = true;
+				Bonus.Score = 10000;
+			}
+			for (FScorePenalty& Penalty : Evidence->ScoringComponent->ScoringData.Penalties)
+			{
+				Penalty.bEnabled = false;
+				Penalty.bGiven = false;
+				Penalty.Score = 0;
+			}
 			Evidence->OnEvidenceStateChanged(EEvidenceActorState::Collected);
 		}
-			
 	}
 	for (AReportableActor* Actor : GameState->AllReportableActors)
 	{
@@ -537,15 +496,20 @@ void Cheats::AutoWin()
 	for (AObjective* Objective : GameState->MissionObjectives)
 	{
 		if (!Objective) continue;
-		Objective->ObjectiveCompleted();
-		Objective->OnRep_ObjectiveStatus();
-		Objective->Multicast_UnlockObjective();
-		Objective->ObjectiveStatus = EObjectiveStatus::Objective_Complete;
-		Objective->OnRep_ObjectiveStatus();
+		for (FScoreBonus &Bonus : Objective->ScoringComponent->ScoringData.Bonuses)
+		{
+			Bonus.bEnabled = true;
+			Bonus.bGiven = true;
+			Bonus.Score = 10000;
+			
+		}
+		for (FScorePenalty& Penalty : Objective->ScoringComponent->ScoringData.Penalties)
+		{
+			Penalty.bEnabled = false;
+			Penalty.bGiven = false;
+			Penalty.Score = 0;
+		}
 	}
-	ArrestAll(ETeam::TEAM_CIVILIAN);
-	ArrestAll(ETeam::TEAM_SUSPECT);
-	GetAllEvidence();
 }
 
 void Cheats::UnlockDoors()

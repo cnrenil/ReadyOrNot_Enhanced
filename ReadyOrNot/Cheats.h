@@ -1,8 +1,7 @@
 #pragma once
 
-#include <imgui.h>
+#include "Engine.h"
 #include "Utils.h"
-#include <string>
 
 inline bool AimbotKeyDown = false;
 
@@ -26,6 +25,7 @@ struct EspSettingsstruct {
 	bool ShowBox = false;
 	bool ShowTraps = true;
 	bool ShowObjectives = false;
+	bool ShowEnemyDistance = false;
 	bool Bones = true;
 	float BoneOpacity = 1.0f;
 	ImVec4 SuspectColor = ImVec4(1.0f, 0.0f, 0.0f, BoneOpacity);
@@ -49,9 +49,8 @@ struct AimbotSettingsstruct {
 	float SmoothingVector = 5.0f;
 	bool DrawArrow = false;
 	bool DrawFOV = false;
-	std::string TargetBone = BoneList.HeadBone;
-	bool RequireKeyHeld = false;
-	ImGuiKey AimbotKey = ImGuiKey_None;
+	bool RequireKeyHeld = true;
+	ImGuiKey AimbotKey = ImGuiKey_MouseRight;
 	float FOVThickness = 1.0f;
 	float ArrowThickness = 2.0f;
 	bool TargetAll = false;
@@ -65,7 +64,6 @@ struct SilentAimSettingsstruct {
 	bool TargetSurrendered = false;
 	bool TargetArrested = false;
 	bool RequiresLOS = false;
-	std::string TargetBone = BoneList.HeadBone;
 	bool DrawFOV = false;
 	bool DrawArrow = false;
 	float ArrowThickness = 2.0f;
@@ -86,7 +84,6 @@ struct CVarsstruct
 	bool SilentAim = false;
 	bool NoClip = false;
 	bool Reticle = false;
-	bool Spam = false;
 	bool TriggerBot = false;
 	bool RenderOptions = false;
 	float FOV = 120.0f;
@@ -101,9 +98,9 @@ struct MiscSettingsStruct {
 	bool ReticleWhenThrowing = false;
 	bool TriggerBotTargetsCivilians = false;
 	bool TriggerBotUsesSilentAim = false;
-	std::string SpamText = "Created by peachmarrow13 check me out on UnknownCheats.me!";
-	bool Promote = true;
 	bool CrossReticle = true;
+	bool ShouldAutoSave = true;
+	bool ShouldSaveCVars = true;
 } inline MiscSettings;
 
 struct Settingsstruct
@@ -111,6 +108,14 @@ struct Settingsstruct
 	bool ShouldSave = true;
 	bool ShouldLoad = true;
 } inline Settings;
+
+struct TextVarsstruct
+{
+	std::string SilentAimBone = BoneList.HeadBone;
+	std::string AimbotBone = BoneList.HeadBone;
+	std::string DebugFunctionNameMustInclude = "";
+	std::string DebugFunctionObjectMustInclude = "";
+} inline TextVars;
 
 struct Cheats
 {
@@ -125,19 +130,18 @@ struct Cheats
 	static void InstaKill();
 	static void RenderESP();
 	static void SetPlayerSpeed();
-	static void SilentAim();
+	static void SilentAim(Params::BaseMagazineWeapon_OnFire* FireParams);
 	static void AddMag();
 	static void ArrestAll(ETeam Team); // Arrest all of a specific team
 	static void KillAll(ETeam Team);   // Kill all of a specific team
 	static void DrawReticle();
-	static void Spam();
 	static void GetAllEvidence();
 	static void TriggerBot();
 	static void RenderEnabledOptions();
 	static void ChangeFOV();
 	static void Lean();
-	static void AutoWin();
 	static void UnlockDoors();
+	static void AutoWin();
 	static void ListPlayers();
 	static void NoClipToggle();
 };

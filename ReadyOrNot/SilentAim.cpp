@@ -1,13 +1,10 @@
-#include <Windows.h>
+#include "Engine.h"
 
-#include "Cheats.h"
-
-void Cheats::SilentAim()
+void Cheats::SilentAim(Params::BaseMagazineWeapon_OnFire* FireParams)
 {
 	if (!CVars.SilentAim) return;
 
-	if (SilentAimSettings.DrawFOV)
-		Utils::DrawFOV(SilentAimSettings.MaxFOV, SilentAimSettings.FOVThickness);
+	if (!GVars.ReadyOrNotChar) return;
 
 	AActor* TargetActor =
 		Utils::GetBestTarget(
@@ -17,32 +14,23 @@ void Cheats::SilentAim()
 			SilentAimSettings.TargetDead,
 			SilentAimSettings.MaxFOV,
 			SilentAimSettings.RequiresLOS,
-			SilentAimSettings.TargetBone,
+			TextVars.SilentAimBone,
 			SilentAimSettings.TargetAll);
 
-	if (GetAsyncKeyState(VK_LBUTTON) & 1)
-	{
-		if (!GVars.PlayerController || !TargetActor) return;
+		if (!TargetActor) return;
 
 		float RandomValue = UKismetMathLibrary::RandomFloatInRange(0.0f, 100.0f);
 		bool bShouldShoot = (RandomValue <= SilentAimSettings.HitChance);
 		if (!bShouldShoot) return;
 
-		if (!GVars.ReadyOrNotChar) return;
 		auto* RONC = GVars.ReadyOrNotChar;
 
-		std::wstring WideString = UtfN::StringToWString(SilentAimSettings.TargetBone);
+		std::wstring WideString = UtfN::StringToWString(TextVars.SilentAimBone);
 		FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
 
 		FVector TargetLocation = ((AReadyOrNotCharacter*)TargetActor)->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
 
-		if (RONC && RONC->GetEquippedWeapon())
-		{
-			RONC->GetEquippedWeapon()->OnFire(FRotator(), TargetLocation);
-		}
-	}
 	if (!TargetActor) return;
 
-	if (SilentAimSettings.DrawArrow)
-		Utils::DrawSnapLine(TargetActor->K2_GetActorLocation(), SilentAimSettings.ArrowThickness);
+	FireParams->SpawnLoc = TargetLocation;
 }

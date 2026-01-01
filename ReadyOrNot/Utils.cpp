@@ -1,10 +1,4 @@
-#include "Utils.h"
-
-#include <imgui.h>
-#include <numbers>
-
-#include "Cheats.h"
-#include "SDK/Engine_classes.hpp"
+#include "Engine.h"
 
 using namespace SDK;
 
@@ -17,19 +11,22 @@ UWorld* Utils::GetWorldSafe()
         i++;
         UEngine* Engine = UEngine::GetEngine();
         if (!Engine) {
-            printf("[Error] Engine not found!\n");
+            //printf("[Error] Engine not found!\n");
+            Sleep(50);
             continue;
         }
 
         UGameViewportClient* Viewport = Engine->GameViewport;
         if (!Viewport) {
-            printf("[Error] GameViewport not found!\n");
+            //printf("[Error] GameViewport not found!\n");
+            Sleep(50);
             continue;
         }
 
         World = Viewport->World;
         if (!World) {
-            printf("[Error] World not found!\n");
+            //printf("[Error] World not found!\n");
+            Sleep(50);
             continue;
         }
 		break; // Successfully obtained World
@@ -49,18 +46,26 @@ APlayerController* Utils::GetPlayerController()
         if (!World) return nullptr; // Error already logged in GetWorldSafe
         UGameInstance* GameInstance = World->OwningGameInstance;
         if (!GameInstance) {
-            printf("[Error] GameInstance not found!\n");
+            //printf("[Error] GameInstance not found!\n");
+            Sleep(50);
+            continue;
         }
         if (GameInstance->LocalPlayers.Num() <= 0) {
-            printf("[Error] No LocalPlayers in GameInstance!\n");
+            //printf("[Error] No LocalPlayers in GameInstance!\n");
+            Sleep(50);
+			continue;
         }
         ULocalPlayer* LocalPlayer = GameInstance->LocalPlayers[0];
         if (!LocalPlayer) {
-            printf("[Error] LocalPlayer is null!\n");
+            //printf("[Error] LocalPlayer is null!\n");
+            Sleep(50);
+			continue;
         }
         PlayerController = LocalPlayer->PlayerController;
         if (!PlayerController) {
-            printf("[Error] PlayerController not found!\n");
+            //printf("[Error] PlayerController not found!\n");
+            Sleep(50);
+			continue;
         }
     }
     if (!Utils::IsValidActor(PlayerController)) return nullptr;
@@ -305,19 +310,18 @@ void Utils::DrawSnapLine(FVector TargetPos, float Thickness = 2.0f)
     ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ScreenPos.X, ScreenPos.Y), 2.0f, IM_COL32(0, 255, 0, 255));
 }
 
-bool Utils::InFOV(AActor* Actor, float MaxFOV)
-{
-    if (!Utils::IsValidActor)
-		return false;
-
-    float HalfFOV = MaxFOV * 0.5f;
-    float CosHalfFOV = UKismetMathLibrary::Cos(UKismetMathLibrary::DegreesToRadians(HalfFOV));
-
-    float Dot = Actor->GetDotProductTo(GVars.ReadyOrNotChar);
-    return Dot >= CosHalfFOV;
-}
-
 void Utils::Error(std::string msg)
 {
     printf("[Error] %s\n", msg.c_str());
+}
+
+void cerrf(const char* Format, ...)
+{
+    va_list Args;
+    va_start(Args, Format);
+
+    // Print to stderr
+    vfprintf(stderr, Format, Args);
+
+    va_end(Args);
 }
