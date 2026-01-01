@@ -121,6 +121,8 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 			if (!hwnd) hwnd = GetForegroundWindow();
 
+			Engine::HookResizeBuffers();
+
 			Engine::InitImGui();
 
 			// Hook WndProc for input handling
@@ -699,7 +701,7 @@ DWORD MainThread(HMODULE hModule)
 
 	Sleep(1000); // Wait a second to ensure everything is loaded	
 
-	if (!Engine::Init())
+	if (!Engine::HookPresent())
 	{
 		printf("[ERROR] Failed to initialize engine hooks.\n");
 		Cleaning.store(true);
@@ -819,6 +821,19 @@ void SaveSettings()
 
 		TextVarsfile.close();
 	}
+
+	if (MiscSettings.ShouldSaveCVars)
+	{
+		std::ofstream CVarsinfile("CVars.bin", std::ios::binary);
+		if (!CVarsinfile.is_open())
+		{
+			CVarsinfile.seekp(0);
+
+			CVarsinfile.write(reinterpret_cast<char*>(&CVars), sizeof(CVars));
+
+			CVarsinfile.close();
+		}
+	}
 }
 
 
@@ -889,6 +904,18 @@ void LoadSettings()
 	TextVarsinfile.read(TextVars.DebugFunctionObjectMustInclude.data(), len);
 
 	TextVarsinfile.close();
+
+	if (MiscSettings.ShouldSaveCVars)
+	{
+		std::ifstream CVarsinfile("CVars.bin", std::ios::binary);
+		if (!CVarsinfile.is_open()) return;
+
+		CVarsinfile.seekg(0);
+
+		CVarsinfile.read(reinterpret_cast<char*>(&CVars), sizeof(CVars));
+
+		CVarsinfile.close();
+	}
 }
 
 void Cleanup(HMODULE hModule)
@@ -955,9 +982,6 @@ void Cleanup(HMODULE hModule)
 		printf("Releasing swap chain...\n");
 		Engine::pSwapChain->Release();
 		Engine::pSwapChain = nullptr;
-	}
-	if (Engine::oPresent) {
-		Engine::oPresent = nullptr;
 	}
 
 	std::cout << "Cleanup complete. Unloading DLL...\n";

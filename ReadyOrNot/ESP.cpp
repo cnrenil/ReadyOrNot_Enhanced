@@ -8,6 +8,7 @@
 #include <dxgi.h>
 #include <Windows.h>
 #include <chrono>
+#include <vector>
 #include <vcruntime_string.h>
 #include <algorithm>
 
@@ -235,6 +236,8 @@ void Cheats::RenderESP()
         else
             memcpy(SuspectSkeletonBones, SuspectSkeletonBones_1, sizeof(SuspectSkeletonBones_1));
 
+        std::vector<FVector2D> BonePositions = {};
+
         for (auto& pair : IsSuspect ? SuspectSkeletonBones : CivilianSkeletonBones)
         {
             FName ParentName = Mesh->GetBoneName(pair.Parent);
@@ -282,6 +285,11 @@ void Cheats::RenderESP()
                 if (GVars.PlayerController->ProjectWorldLocationToScreen(ParentPos, &ParentScreen, true) &&
                     GVars.PlayerController->ProjectWorldLocationToScreen(ChildPos, &ChildScreen, true))
                 {
+                    if (ESPSettings.ShowBox)
+                    {
+                        BonePositions.push_back(ParentScreen);
+                        BonePositions.push_back(ChildScreen);
+                    }
 
                     GVars.PlayerController->GetViewportSize(&ViewportX, &ViewportY);
                     if (ParentScreen.X == 0.f && ParentScreen.Y == 0.f or ParentScreen.X > ViewportX or ParentScreen.Y > ViewportY) continue;
@@ -293,89 +301,7 @@ void Cheats::RenderESP()
                     );
                 }
             }
-            if (ESPSettings.ShowBox)
-            {
-                FVector BoundsOrigin;
-                FVector BoundsExtent;
-                TargetActor->GetActorBounds(true, &BoundsOrigin, &BoundsExtent, false);
 
-                FVector WorldTop = BoundsOrigin + FVector(0.f, 0.f, BoundsExtent.Z);
-                FVector WorldBottom = BoundsOrigin - FVector(0.f, 0.f, BoundsExtent.Z);
-
-                FVector ActorRight = TargetActor->GetActorRightVector();
-                FVector WorldLeft = BoundsOrigin - ActorRight * BoundsExtent.Y;
-                FVector WorldRight = BoundsOrigin + ActorRight * BoundsExtent.Y;
-
-                FVector2D ScreenTop, ScreenBottom, ScreenLeft, ScreenRight;
-                bool bTopOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldTop, &ScreenTop, true);
-                bool bBottomOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldBottom, &ScreenBottom, true);
-                bool bLeftOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldLeft, &ScreenLeft, true);
-                bool bRightOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(WorldRight, &ScreenRight, true);
-
-                float boxWidth = 0.0f;
-                float boxHeight = 0.0f;
-
-                if (!bTopOnScreen && !bBottomOnScreen && !bTopOnScreen && !bBottomOnScreen)
-                    continue;
-           
-                if (bTopOnScreen && bBottomOnScreen)
-                {
-                    boxHeight = fabsf(ScreenTop.Y - ScreenBottom.Y);
-                }
-
-                if (bLeftOnScreen && bRightOnScreen)
-                {
-                    boxWidth = fabsf(ScreenLeft.X - ScreenRight.X);
-                }
-
-                if (boxHeight <= 0.0f || boxWidth <= 0.0f)
-                {
-                    float distance = GVars.PlayerController->GetDistanceTo(TargetActor);
-                    if (distance <= 20) distance = 1.0f;
-
-                    const float baseScale = 200000.0f;
-                    float fallbackHeight = baseScale / distance;
-                    float fallbackWidth = fallbackHeight * 0.5f;
-
-                    if (boxHeight <= 0.0f) boxHeight = fallbackHeight;
-                    if (boxWidth <= 0.0f) boxWidth = fallbackWidth;
-                }
-
-                const float padding = 4.0f;
-                boxWidth += padding;
-                boxHeight += padding;
-
-                boxHeight = std::clamp(boxHeight, 10.0f, 1000.0f);
-                boxWidth = std::clamp(boxWidth, 5.0f, 100.0f);
-
-                FVector2D ScreenOrigin;
-                bool bOriginOnScreen = GVars.PlayerController->ProjectWorldLocationToScreen(BoundsOrigin, &ScreenOrigin, true);
-
-                ImVec2 rectCenter;
-                if (bOriginOnScreen)
-                {
-                    rectCenter = ImVec2(ScreenOrigin.X, ScreenOrigin.Y - (boxHeight * 0.5f) + (boxHeight * 0.5f));
-                }
-                else if (bTopOnScreen && bBottomOnScreen)
-                {
-                    rectCenter = ImVec2((ScreenTop.X + ScreenBottom.X) * 0.5f, (ScreenTop.Y + ScreenBottom.Y) * 0.5f);
-                }
-                else
-                {
-                    FVector2D ActorScreen;
-                    GVars.PlayerController->ProjectWorldLocationToScreen(Actor->K2_GetActorLocation(), &ActorScreen, true);
-                    rectCenter = ImVec2(ActorScreen.X, ActorScreen.Y);
-                }
-
-                ImGui::GetBackgroundDrawList()->AddRect(
-                    ImVec2(rectCenter.x - boxWidth / 2.f, rectCenter.y - boxHeight / 2.f),
-                    ImVec2(rectCenter.x + boxWidth / 2.f, rectCenter.y + boxHeight / 2.f),
-                    RenderColor,
-                    0.0f,
-                    15,
-                    1.5f
-                );
-            }
             if (ESPSettings.ShowEnemyDistance)
             {
                 FVector ActorLocation = TargetActor->K2_GetActorLocation();
@@ -401,6 +327,33 @@ void Cheats::RenderESP()
                     TargetActor->PlayerState->GetPlayerName().ToString().c_str()
                 );
             }
+        }
+        if (ESPSettings.ShowBox)
+        {
+			FVector2D TopLeft, BottomRight;
+
+			for (FVector2D BonePos : BonePositions)
+            {
+				if (BonePos.X < TopLeft.X || TopLeft.X == 0)
+                    TopLeft.X = BonePos.X;
+
+				if (BonePos.Y < TopLeft.Y || TopLeft.Y == 0)
+					TopLeft.Y = BonePos.Y;
+
+                if (BonePos.X > BottomRight.X)
+					BottomRight.X = BonePos.X;
+
+				if (BonePos.Y > BottomRight.Y)
+					BottomRight.Y = BonePos.Y;
+            }
+            ImGui::GetBackgroundDrawList()->AddRect(
+                ImVec2(TopLeft.X, TopLeft.Y),
+                ImVec2(BottomRight.X, BottomRight.Y),
+                RenderColor,
+                0.0f,
+                0,
+                1.5f
+            );
         }
     }
 }
