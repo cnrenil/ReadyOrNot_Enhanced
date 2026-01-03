@@ -1,5 +1,9 @@
 #include "Engine.h"
 
+#define MAJORVERSION 2
+#define MINORVERSION 4
+#define PATCHVERSION 2
+
 static const std::pair<const char*, std::string> BoneOptions[] = {
 	{"Head", BoneList.HeadBone},
 	{"Neck", BoneList.NeckBone},
@@ -173,7 +177,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			if (ImGui::BeginTabItem("About"))
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
-				ImGui::Text("Version 2.4.1");
+				ImGui::Text("Version %d.%d.%d", MAJORVERSION, MINORVERSION, PATCHVERSION);
 				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
