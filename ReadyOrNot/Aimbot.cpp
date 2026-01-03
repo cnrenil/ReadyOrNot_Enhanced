@@ -29,7 +29,8 @@ void Cheats::Aimbot()
 		AimbotSettings.MaxFOV,
 		AimbotSettings.LOS,
 		TextVars.AimbotBone,
-		AimbotSettings.TargetAll);
+		AimbotSettings.TargetAll
+	);
 
 	if (!Target) return;
 

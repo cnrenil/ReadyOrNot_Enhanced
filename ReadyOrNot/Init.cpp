@@ -126,15 +126,8 @@ bool HookPresentLocal()
 	D3D_FEATURE_LEVEL FeatureLevel;
 	D3D_FEATURE_LEVEL FeatureLevelsRequested = D3D_FEATURE_LEVEL_11_0;
 
-	if (SUCCEEDED(D3D11CreateDeviceAndSwapChain(
-		nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0,
-		&FeatureLevelsRequested, 1, D3D11_SDK_VERSION,
-		&Engine::sd, &Engine::pSwapChain, &Engine::pDevice, &FeatureLevel, &Engine::pContext)))
+	if (Engine::pSwapChain)
 	{
-		// void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
-		// Present = vTable[8]
-		// ResizeBuffers = vTable[13]
-
 		void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
 
 		if (!vTable)
@@ -142,19 +135,12 @@ bool HookPresentLocal()
 			printf("[ERROR] Failed to get SwapChain vTable...\n");
 			return false;
 		}
-			
+
 		Engine::PresentAddr = (LPVOID)vTable[8];
 		Engine::oPresent = (Engine::tPresent)vTable[8]; // store original
 
 		MH_CreateHook(Engine::PresentAddr, (LPVOID)&Engine::hkPresent, reinterpret_cast<LPVOID*>(&Engine::oPresent));
 		MH_EnableHook(Engine::PresentAddr);
-
-		//DWORD oldProtect;
-		//VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-		//vTable[8] = (void*)&Engine::hkPresent; // replace with my hook
-		//VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
-			
-		DestroyWindow(Engine::sd.OutputWindow);
 
 		Engine::pSwapChain->Release();
 		Engine::pContext->Release();
@@ -164,14 +150,53 @@ bool HookPresentLocal()
 	}
 	else
 	{
-		printf("[ERROR] D3D11CreateDeviceAndSwapChain failed...\n");
-		DestroyWindow(Engine::sd.OutputWindow);
+		if (SUCCEEDED(D3D11CreateDeviceAndSwapChain(
+			nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0,
+			&FeatureLevelsRequested, 1, D3D11_SDK_VERSION,
+			&Engine::sd, &Engine::pSwapChain, &Engine::pDevice, &FeatureLevel, &Engine::pContext)))
+		{
+			// void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+			// Present = vTable[8]
+			// ResizeBuffers = vTable[13]
 
-		Engine::pSwapChain->Release();
-		Engine::pContext->Release();
-		Engine::pDevice->Release();
+			void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
 
-		return false;
+			if (!vTable)
+			{
+				printf("[ERROR] Failed to get SwapChain vTable...\n");
+				return false;
+			}
+
+			Engine::PresentAddr = (LPVOID)vTable[8];
+			Engine::oPresent = (Engine::tPresent)vTable[8]; // store original
+
+			MH_CreateHook(Engine::PresentAddr, (LPVOID)&Engine::hkPresent, reinterpret_cast<LPVOID*>(&Engine::oPresent));
+			MH_EnableHook(Engine::PresentAddr);
+
+			//DWORD oldProtect;
+			//VirtualProtect(&vTable[8], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+			//vTable[8] = (void*)&Engine::hkPresent; // replace with my hook
+			//VirtualProtect(&vTable[8], sizeof(void*), oldProtect, &oldProtect);
+
+			DestroyWindow(Engine::sd.OutputWindow);
+
+			Engine::pSwapChain->Release();
+			Engine::pContext->Release();
+			Engine::pDevice->Release();
+
+			return true;
+		}
+		else
+		{
+			printf("[ERROR] D3D11CreateDeviceAndSwapChain failed...\n");
+			DestroyWindow(Engine::sd.OutputWindow);
+
+			Engine::pSwapChain->Release();
+			Engine::pContext->Release();
+			Engine::pDevice->Release();
+
+			return false;
+		}
 	}
 
 	return false;

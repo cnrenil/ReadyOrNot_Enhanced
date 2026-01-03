@@ -287,10 +287,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					SaveSettings();
 				ImGui::SameLine();
 
-				ImGui::Checkbox("Should Auto Save Settings", &MiscSettings.ShouldAutoSave);
-				ImGui::SameLine();
-				ImGui::Checkbox("Should Save Enabled Cheats", &MiscSettings.ShouldSaveCVars);
-
 				if (ImGui::Button("Load Settings"))
 					LoadSettings();
 				AddDefaultTooltip("These only save and load the configs not which cheats are enabled.");
@@ -489,6 +485,10 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					ImGui::Checkbox("Show Enabled Options", &CVars.RenderOptions);
 
 					ImGui::Checkbox("List Players", &CVars.ListPlayers);
+
+					ImGui::Checkbox("Should Auto Save Settings", &MiscSettings.ShouldAutoSave);
+					ImGui::SameLine();
+					ImGui::Checkbox("Should Save Enabled Cheats", &MiscSettings.ShouldSaveCVars);
 
 					ImGui::SeparatorText("KeyBinds");
 
@@ -738,8 +738,6 @@ DWORD MainThread(HMODULE hModule)
 		Sleep(100);
 	}
 
-	SaveSettings();
-
 	Cleanup(hModule);
 
 	return 0;
@@ -825,7 +823,7 @@ void SaveSettings()
 	if (MiscSettings.ShouldSaveCVars)
 	{
 		std::ofstream CVarsinfile("CVars.bin", std::ios::binary);
-		if (!CVarsinfile.is_open())
+		if (CVarsinfile.is_open())
 		{
 			CVarsinfile.seekp(0);
 
@@ -922,6 +920,8 @@ void Cleanup(HMODULE hModule)
 {
 	Cleaning.store(true);
 	std::cout << "Cleaning up...\n";
+
+	SaveSettings();
 
 	CVars.Aimbot = false;
 	CVars.ESP = false;
