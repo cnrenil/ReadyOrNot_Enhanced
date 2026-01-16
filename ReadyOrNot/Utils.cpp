@@ -182,9 +182,9 @@ FVector2D Utils::ImVec2ToFVector2D(ImVec2 Vector)
 	return FVector2D(Vector.x, Vector.y);
 }
 
-AActor* Utils::GetBestTarget(bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll)
+AActor* Utils::GetBestTarget(APlayerController* ViewPoint, bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll)
 {
-    if (!GVars.World || !GVars.Level || !GVars.ReadyOrNotChar || !GVars.PlayerController) return nullptr;
+    if (!GVars.World || !GVars.Level || !ViewPoint || !ViewPoint->PlayerCameraManager) return nullptr;
 
     std::wstring WideString = UtfN::StringToWString(TargetBone);
     FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
@@ -231,11 +231,11 @@ AActor* Utils::GetBestTarget(bool TargetCivs, bool TargetArrested, bool TargetSu
 
         if (RequiresLOS)
         {
-            FVector Start = GVars.POV->Location;
+            FVector Start = ViewPoint->PlayerCameraManager->CameraCachePrivate.POV.Location;
             FVector End = BoneLocation;
 
             TArray<AActor*> IgnoreActors;
-            IgnoreActors.Add(GVars.ReadyOrNotChar);
+            //IgnoreActors.Add(GVars.ReadyOrNotChar);
 
             FHitResult HitResult;
             bool bHit = UKismetSystemLibrary::LineTraceSingle(
@@ -262,7 +262,7 @@ AActor* Utils::GetBestTarget(bool TargetCivs, bool TargetArrested, bool TargetSu
         }
 
         FVector2D ScreenLocation;
-        if (!GVars.PlayerController->ProjectWorldLocationToScreen(BoneLocation, &ScreenLocation, true))
+        if (!ViewPoint->ProjectWorldLocationToScreen(BoneLocation, &ScreenLocation, true))
             continue;
 
         FVector2D ViewportSize = Utils::ImVec2ToFVector2D(GVars.ScreenSize);
@@ -324,4 +324,42 @@ void cerrf(const char* Format, ...)
     vfprintf(stderr, Format, Args);
 
     va_end(Args);
+}
+
+ACharacter* Utils::GetNearestCharacter(ETeam Team)
+{
+    if (!GVars.Level || !GVars.ReadyOrNotChar) return nullptr;
+    ACharacter* NearestCharacter = nullptr;
+    float NearestDistance = FLT_MAX;
+    for (AActor* Actor : GVars.Level->Actors)
+    {
+        if (!Actor || !Utils::IsValidActor(Actor))
+            continue;
+        AReadyOrNotCharacter* ReadyOrNotChar;
+        if (Actor->IsA(AReadyOrNotCharacter::StaticClass()))
+        {
+            ReadyOrNotChar = reinterpret_cast<AReadyOrNotCharacter*>(Actor);
+            if (!ReadyOrNotChar)
+                continue;
+            bool bIsCivilian = ReadyOrNotChar->IsCivilian();
+            bool bIsSuspect = ReadyOrNotChar->IsSuspect();
+            if (Team == ETeam::TEAM_CIVILIAN && !bIsCivilian)
+                continue;
+            if (Team == ETeam::TEAM_SUSPECT && !bIsSuspect)
+                continue;
+            if (Team == ETeam::TEAM_SWAT && (bIsCivilian || bIsSuspect))
+                continue;
+        }
+        else
+            continue;
+        FVector PlayerLocation = GVars.ReadyOrNotChar->K2_GetActorLocation();
+        FVector TargetLocation = ReadyOrNotChar->K2_GetActorLocation();
+        float Distance = PlayerLocation.GetDistanceTo(TargetLocation);
+        if (Distance < NearestDistance)
+        {
+            NearestDistance = Distance;
+            NearestCharacter = ReadyOrNotChar;
+        }
+    }
+	return NearestCharacter;
 }

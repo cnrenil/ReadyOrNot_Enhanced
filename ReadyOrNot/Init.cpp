@@ -9,7 +9,6 @@ ID3D11DeviceContext* Engine::pContext = nullptr;
 ID3D11RenderTargetView* Engine::pRenderTargetView = nullptr;
 Engine::tResizeBuffers Engine::oResizeBuffers;
 
-bool HookResizeBuffers();
 bool HookPresentLocal();
 
 bool Engine::HookPresent()
@@ -103,11 +102,17 @@ bool Engine::HookResizeBuffers()
 
 bool HookPresentLocal()
 {
+	WNDCLASSA wc = { 0 };
+	wc.lpfnWndProc = DefWindowProcA;
+	wc.hInstance = GetModuleHandleA(nullptr);
+	wc.lpszClassName = "DummyWindowClass";
+	RegisterClassA(&wc);
+
 	ZeroMemory(&Engine::sd, sizeof(DXGI_SWAP_CHAIN_DESC));
 	Engine::sd.BufferCount = 1;
 	Engine::sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	Engine::sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	Engine::sd.OutputWindow = CreateWindowA("STATIC", "Dummy Window", WS_DISABLED, 0, 0, 100, 100, HWND_MESSAGE, nullptr, nullptr, nullptr);
+	Engine::sd.OutputWindow = CreateWindowA("DummyWindowClass", "Dummy Window", WS_OVERLAPPEDWINDOW, 0, 0, 100, 100, nullptr, nullptr, nullptr, nullptr);
 	Engine::sd.SampleDesc.Count = 1;
 	Engine::sd.SampleDesc.Quality = 0;
 	Engine::sd.Windowed = TRUE;
@@ -143,8 +148,8 @@ bool HookPresentLocal()
 		MH_EnableHook(Engine::PresentAddr);
 
 		Engine::pSwapChain->Release();
-		Engine::pContext->Release();
-		Engine::pDevice->Release();
+		if (Engine::pContext) Engine::pContext->Release();
+		if (Engine::pDevice) Engine::pDevice->Release();
 
 		return true;
 	}
@@ -159,7 +164,15 @@ bool HookPresentLocal()
 			// Present = vTable[8]
 			// ResizeBuffers = vTable[13]
 
-			void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+			void** vTable;
+
+			if (Engine::pSwapChain)
+				vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+			else
+			{
+				printf("[ERROR] pSwapChain is null after creation...\n");
+				return false;
+			}
 
 			if (!vTable)
 			{
@@ -189,11 +202,11 @@ bool HookPresentLocal()
 		else
 		{
 			printf("[ERROR] D3D11CreateDeviceAndSwapChain failed...\n");
-			DestroyWindow(Engine::sd.OutputWindow);
+			if (Engine::sd.OutputWindow) DestroyWindow(Engine::sd.OutputWindow);
 
-			Engine::pSwapChain->Release();
-			Engine::pContext->Release();
-			Engine::pDevice->Release();
+			if (Engine::pSwapChain) Engine::pSwapChain->Release();
+			if (Engine::pContext) Engine::pContext->Release();
+			if (Engine::pDevice) Engine::pDevice->Release();
 
 			return false;
 		}

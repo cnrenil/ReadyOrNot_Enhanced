@@ -2,7 +2,7 @@
 
 #define MAJORVERSION 2
 #define MINORVERSION 4
-#define PATCHVERSION 2
+#define PATCHVERSION 3
 
 static const std::pair<const char*, std::string> BoneOptions[] = {
 	{"Head", BoneList.HeadBone},
@@ -25,6 +25,7 @@ int Frames = 0;
 
 float FireRate = 1;
 
+std::atomic<HMODULE> g_hModule{ nullptr };
 std::atomic<int> g_PresentCount{ 0 };
 std::atomic<bool> Cleaning{ false };
 std::atomic<bool> Resizing{ false };
@@ -42,15 +43,34 @@ extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam
 WNDPROC oWndProc = nullptr;
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if (!Cleaning.load())
+	{
+		if (ImGui::GetCurrentContext()) {
+			ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
+		}
 
-	if (ImGui::GetCurrentContext()) {
-		ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-	}
+		if (uMsg == WM_KEYUP) {
+			if (wParam == VK_INSERT) {
+				ShowMenu = !ShowMenu;
+				//std::cout << "Menu: " << (ShowMenu ? "ON" : "OFF") << "\n";
+				ImGui::GetIO().MouseDrawCursor = ShowMenu;
+				ShowCursor(ShowMenu);
+				return TRUE;
+			}
+		}
 
-	if (uMsg == WM_SETCURSOR) {
-		if (!ShowMenu) {   // only block cursor when menu is hidden
-			SetCursor(NULL);
-			return TRUE;    // prevent Windows from drawing it
+		if (uMsg == WM_KEYUP) {
+			if (wParam == VK_END) {
+				Cleaning.store(true);
+				return TRUE;
+			}
+		}
+
+		if (uMsg == WM_SETCURSOR) {
+			if (!ShowMenu) {   // only block cursor when menu is hidden
+				SetCursor(NULL);
+				return TRUE;    // prevent Windows from drawing it
+			}
 		}
 	}
 
@@ -178,7 +198,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			{
 				ImGui::Text("Free Ready or Not Cheat by PeachMarrow12");
 				ImGui::Text("Version %d.%d.%d", MAJORVERSION, MINORVERSION, PATCHVERSION);
-				ImGui::Text("Message me on Discord for support!");
 
 				if (GVars.PlayerController && GVars.PlayerController->PlayerState)
 				{
@@ -217,6 +236,10 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					Cheats::ChangeFOV();
 				}
 
+				if (ImGui::Button("Move To Nearest Suspect"))
+					Cheats::GoTo(Utils::GetNearestCharacter(ETeam::TEAM_SUSPECT)->K2_GetActorLocation());
+				
+
 				ImGui::EndTabItem();
 			}
 
@@ -228,7 +251,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 				if (ImGui::Button("Remove Recoil"))
 					Cheats::RemoveRecoil();
-				
+
 				if (ImGui::Button("Remove Spread"))
 					Cheats::RemoveSpread();
 
@@ -244,6 +267,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 				if (ImGui::Button("Increase Fire Rate"))
 					Cheats::SetFireRate(0.001f);
 				
+				ImGui::Checkbox("Shoot From Reticle", &CVars.ShootFromReticle);
 
 				if (ImGui::Button("Add Magazine"))
 					Cheats::AddMag();
@@ -280,13 +304,13 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 				if (ImGui::Button("Unlock All Doors"))
 					Cheats::UnlockDoors();
 
+				ImGui::Checkbox("Bullet Time", &CVars.BulletTime);
+
 				ImGui::EndTabItem();
 			}
 
 			if (ImGui::BeginTabItem("Misc"))
 			{
-
-
 				if (ImGui::Button("Save Settings"))
 					SaveSettings();
 				ImGui::SameLine();
@@ -571,7 +595,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			{
 				if (ImGui::BeginTabItem("Secret Features"))
 				{
-
+					ImGui::Text("This is for development.");
 					ImGui::EndTabItem();
 				}
 			}
@@ -580,11 +604,9 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 		}
 
 		ImGui::Separator();
-
-		ImGui::Text("This cheat will most likely not be getting any more features as I have moved on but it will still get bug fixes and offset updates.");
-
-		ImGui::Text("You can find me on Discord, UnknownCheats.me, and GitHub under Peachmarrow12 or Peachmarrow13.");
-
+		ImGui::Text("You can find me on UnknownCheats.me as Peachmarrow13.");
+		ImGui::SameLine();
+		ImGui::Text("This cheat was released on UnknownCheats.me for free do not download this from anywhere else.");
 		ImGui::End();
 	}
 
@@ -601,6 +623,11 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 	if (CVars.ListPlayers)
 		Cheats::ListPlayers();
 
+	if (CVars.BulletTime)
+		GVars.World->K2_GetWorldSettings()->TimeDilation = 0.3f; // Slow-mo
+	else
+		GVars.World->K2_GetWorldSettings()->TimeDilation = 1.0f; // Normal
+
 	if (CVars.ESP)
 		Cheats::RenderESP();
 
@@ -611,6 +638,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 
 		AActor* TargetActor =
 			Utils::GetBestTarget(
+				GVars.PlayerController,
 				SilentAimSettings.TargetCivilians,
 				SilentAimSettings.TargetArrested,
 				SilentAimSettings.TargetSurrendered,
@@ -686,6 +714,8 @@ DWORD MainThread(HMODULE hModule)
 
 	std::cout << "Cheat Injecting...\n";
 
+	g_hModule.store(hModule);
+
 	int Attempts = 0;
 
 	while (!UEngine::GetEngine() && Attempts < 50)
@@ -723,25 +753,8 @@ DWORD MainThread(HMODULE hModule)
 	Hooks::HookProcessEvent();
 
 	while (!Cleaning.load())
-	{
-		if (GetAsyncKeyState(VK_END) & 1) // Exit with END key
-		{
-			std::cout << "Exiting...\n";
-			Cleaning.store(true);
-			break;
-		}
-
-		if (GetAsyncKeyState(VK_INSERT) & 1) // Toggle Cheat Menu with INSERT key
-		{
-			ShowMenu = !ShowMenu;
-			std::cout << "Menu: " << (ShowMenu ? "ON" : "OFF") << "\n";
-			ImGui::GetIO().MouseDrawCursor = ShowMenu;
-			ShowCursor(ShowMenu);
-		}
-
 		Sleep(100);
-	}
-
+	
 	Cleanup(hModule);
 
 	return 0;
@@ -764,8 +777,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {
 
 void SaveSettings()
 {
-	if (!Settings.ShouldSave)
-		return;
+	//if (!Settings.ShouldSave)
+		//return;
 
 	// Save MiscSettings (binary)
 	std::ofstream MiscSettingsfile("MiscSettings.bin", std::ios::binary);

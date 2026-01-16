@@ -22,6 +22,7 @@ void Cheats::Aimbot()
 	FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
 
 	AActor* Target = Utils::GetBestTarget(
+		GVars.PlayerController,
 		AimbotSettings.TargetCivilians,
 		AimbotSettings.TargetArrested,
 		AimbotSettings.TargetArrested,
@@ -73,15 +74,13 @@ void Cheats::Aimbot()
 		float Dist = std::sqrt(AngleDiff.X * AngleDiff.X + AngleDiff.Y * AngleDiff.Y + AngleDiff.Z * AngleDiff.Z);
 		FVector TargetDir = Dist > 0.0f ? FVector(AngleDiff.X / Dist, AngleDiff.Y / Dist, AngleDiff.Z / Dist) : CurrentDir;
 
-		// Smoothing factor: assume scalar smoothing value (previous code divided rotator by SmoothingVector)
 		// Guard against zero or negative smoothing values
-		float SmoothFactor = 1.0f;
-		// If SmoothingVector is a scalar, use it directly. If it's a FVector-like struct, this will not compile;
-		// adjust to match your AimbotSettings definition if needed.
-		SmoothFactor = AimbotSettings.SmoothingVector;
-		if (SmoothFactor <= 0.0f) SmoothFactor = 1.0f;
+		float SmoothFactor = 5.0f;
 
-		// Interpolate in direction-space (vector smoothing)
+		SmoothFactor = AimbotSettings.SmoothingVector;
+
+		if (SmoothFactor <= 0.0f) SmoothFactor = 5.0f;
+
 		FVector DeltaDir = TargetDir - CurrentDir;
 		FVector SmoothedDir = CurrentDir + (DeltaDir / SmoothFactor);
 		SmoothedDir.Normalize();

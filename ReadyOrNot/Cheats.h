@@ -88,6 +88,9 @@ struct CVarsstruct
 	bool RenderOptions = false;
 	float FOV = 120.0f;
 	bool ListPlayers = false;
+	bool ShootFromReticle = false;
+	bool SaveDebugToFile = false;
+	bool BulletTime = false;
 } inline CVars;
 
 struct MiscSettingsStruct {
@@ -143,5 +146,7 @@ struct Cheats
 	static void UnlockDoors();
 	static void AutoWin();
 	static void ListPlayers();
+	static void ChangeGameRenderSettings();
 	static void NoClipToggle();
+	static void GoTo(FVector Location);
 };

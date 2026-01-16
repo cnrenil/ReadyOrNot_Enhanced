@@ -7,7 +7,7 @@
 #include "Utils.h"
 
 #include "SDK/Engine_classes.hpp"
-#include "SDK/ReadyOrNot_classes.hpp"
+//#include "SDK/ReadyOrNot_classes.hpp"
 
 using namespace SDK;
 
@@ -558,7 +558,7 @@ void Cheats::ListPlayers()
 
 		ImGui::TextColored(Color, "%s", Player->PlayerState->GetPlayerName().ToString());
 
-		if (Player->GetController() && Player->GetController() == GVars.PlayerController) continue; // skip ourselves
+		if (Player->GetController() && Player->GetController() == GVars.PlayerController || Player == GVars.ReadyOrNotChar) continue; // skip ourselves
 
 		if (GVars.PlayerController && GVars.PlayerController->HasAuthority())
 		{
@@ -588,6 +588,13 @@ void Cheats::ListPlayers()
 					Player->Server_TeleportPlayerToLocation(GVars.ReadyOrNotChar->K2_GetActorLocation(), GVars.ReadyOrNotChar->K2_GetActorLocation());
 			}
 			ImGui::PopID();
+			ImGui::PushID((ID + "Speed").c_str());
+			ImGui::SameLine();
+			if (ImGui::Button("Speed"))
+			{
+				Player->Server_SetWalkSpeed(240.0f * 10, 1000);
+			}
+			ImGui::PopID();
 		}
 	}
 	ImGui::End();
@@ -607,4 +614,35 @@ void Cheats::NoClipToggle()
 
 	RONMovementComponent->SetMovementMode(EMovementMode::MOVE_Flying, 5);
 	RONCharacter->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+}
+
+void Cheats::ChangeGameRenderSettings()
+{
+	if (!GVars.PlayerController) return;
+
+	GVars.PlayerController->SendToConsole(L"r.BloomQuality 0");
+	GVars.PlayerController->SendToConsole(L"r.AmbientOcclusionLevel 0");
+	GVars.PlayerController->SendToConsole(L"r.BloomQuality 0");
+	GVars.PlayerController->SendToConsole(L"r.ShadowQuality 0");
+}
+
+void Cheats::GoTo(FVector Location)
+{
+	if (!GVars.ReadyOrNotChar || !GVars.PlayerController)
+	{
+		Utils::Error("[ERROR]: GoTo ; Invalid Player Character or Controller");
+		return;
+	}
+
+	for (AActor* Actor : GVars.Level->Actors)
+	{
+		if (!Actor || !Utils::IsValidActor(Actor)) continue;
+		if (Actor->IsA(ACyberneticCharacter::StaticClass()))
+		{
+			ACyberneticCharacter* Char = reinterpret_cast<ACyberneticCharacter*>(Actor);
+			if (!Char) continue;
+			reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->Server_GiveAIMoveTo(Char, GVars.ReadyOrNotChar->K2_GetActorLocation());
+		}
+	}
+	
 }

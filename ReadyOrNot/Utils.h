@@ -71,7 +71,7 @@ struct Utils
 	static unsigned ConvertImVec4toU32(ImVec4 Color);
 	static void PrintActors(const char* Exclude);
 	static FRotator VectorToRotation(const FVector& Vec);
-	static AActor* GetBestTarget(bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll);
+	static AActor* GetBestTarget(APlayerController* ViewPoint, bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll);
 	static void DrawFOV(float MaxFOV, float Thickness);
 	static void DrawSnapLine(FVector TargetPos, float Thickness);
 	static FVector FRotatorToVector(const FRotator& Rot);
@@ -81,6 +81,7 @@ struct Utils
 	static ImVec2 FVector2DToImVec2(FVector2D Vector);
 	static FRotator GetRotationToTarget(const FVector& Start, const FVector& Target);
 	static FVector2D ImVec2ToFVector2D(ImVec2 Vector);
+	static ACharacter* GetNearestCharacter(ETeam Team);
 	static void Error(std::string msg);
 
 };

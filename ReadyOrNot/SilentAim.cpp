@@ -8,6 +8,7 @@ void Cheats::SilentAim(Params::BaseMagazineWeapon_OnFire* FireParams)
 
 	AActor* TargetActor =
 		Utils::GetBestTarget(
+			GVars.PlayerController,
 			SilentAimSettings.TargetCivilians,
 			SilentAimSettings.TargetArrested,
 			SilentAimSettings.TargetSurrendered,
