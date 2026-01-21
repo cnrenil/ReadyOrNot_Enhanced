@@ -62,6 +62,7 @@ A feature-rich cheat/trainer for Ready or Not, built with C++ using ImGui and Di
   - Target bone selection
   - Snap line visualization
   - Advanced targeting options
+  - Shoot from reticle
 
 - **TriggerBot**
   - LOS verification
@@ -77,6 +78,7 @@ A feature-rich cheat/trainer for Ready or Not, built with C++ using ImGui and Di
   - Distance display
   - Customizable bone colors and opacity
   - Line of sight indicators
+  - Objective ESP
 
 - **Custom Reticle**
   - Cross or dot styles
@@ -109,6 +111,7 @@ A feature-rich cheat/trainer for Ready or Not, built with C++ using ImGui and Di
   - Grant God Mode to players
   - Grant Infinite Ammo to players
   - Teleport players to your location
+  - Grant Increased Movement Speed
 
 ### Configuration
 - **Auto Save/Load** - Automatically save and restore settings
