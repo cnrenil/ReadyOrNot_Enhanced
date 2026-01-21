@@ -616,33 +616,29 @@ void Cheats::NoClipToggle()
 	RONCharacter->CapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 }
 
-void Cheats::ChangeGameRenderSettings()
+void Cheats::SurrenderAll(ETeam Team)
 {
-	if (!GVars.PlayerController) return;
-
-	GVars.PlayerController->SendToConsole(L"r.BloomQuality 0");
-	GVars.PlayerController->SendToConsole(L"r.AmbientOcclusionLevel 0");
-	GVars.PlayerController->SendToConsole(L"r.BloomQuality 0");
-	GVars.PlayerController->SendToConsole(L"r.ShadowQuality 0");
-}
-
-void Cheats::GoTo(FVector Location)
-{
-	if (!GVars.ReadyOrNotChar || !GVars.PlayerController)
-	{
-		Utils::Error("[ERROR]: GoTo ; Invalid Player Character or Controller");
-		return;
-	}
-
-	for (AActor* Actor : GVars.Level->Actors)
-	{
-		if (!Actor || !Utils::IsValidActor(Actor)) continue;
-		if (Actor->IsA(ACyberneticCharacter::StaticClass()))
+	if (!GVars.Level) return;
+	ULevel* Level = GVars.Level;
+	if (Level) {
+		ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
+		if (!ActorsCopy || ActorsCopy.Num() == 0) return;
+		if (ActorsCopy)
 		{
-			ACyberneticCharacter* Char = reinterpret_cast<ACyberneticCharacter*>(Actor);
-			if (!Char) continue;
-			reinterpret_cast<APlayerCharacter*>(GVars.ReadyOrNotChar)->Server_GiveAIMoveTo(Char, GVars.ReadyOrNotChar->K2_GetActorLocation());
+			for (AActor* Actor : ActorsCopy)
+			{
+				if (!Actor || !Utils::IsValidActor(Actor)) continue;
+				if (Team == ETeam::TEAM_CIVILIAN && Actor->IsA(ACivilianCharacter::StaticClass()) || Team == ETeam::TEAM_SUSPECT && Actor->IsA(ASuspectCharacter::StaticClass()))
+				{
+					AReadyOrNotCharacter* Char = reinterpret_cast<AReadyOrNotCharacter*>(Actor);
+					if (!Char) continue;
+					if (Char->IsArrestedOrSurrendered()) continue; // Can't re-surrender already surrendered civilians or it will crash
+					Char->OnRep_Surrendered();
+					Char->bSurrendered = true;
+					Char->bSurrenderComplete = true;
+					Char->OnRep_Surrendered();
+				}
+			}
 		}
 	}
-	
 }

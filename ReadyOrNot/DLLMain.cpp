@@ -236,10 +236,6 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 					Cheats::ChangeFOV();
 				}
 
-				if (ImGui::Button("Move To Nearest Suspect"))
-					Cheats::GoTo(Utils::GetNearestCharacter(ETeam::TEAM_SUSPECT)->K2_GetActorLocation());
-				
-
 				ImGui::EndTabItem();
 			}
 
@@ -281,19 +277,31 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			{
 				if (ImGui::Button("Kill All Suspects"))
 					Cheats::KillAll(ETeam::TEAM_SUSPECT);
+
 				ImGui::SameLine();
 
-				if (ImGui::Button("Kill All Civilians"))
-					Cheats::KillAll(ETeam::TEAM_CIVILIAN);
-				HostOnlyTooltip();
+				if (ImGui::Button("Surrender All Suspects"))
+					Cheats::SurrenderAll(ETeam::TEAM_SUSPECT);
+
+				ImGui::SameLine();
 
 				if (ImGui::Button("Arrest All Suspects"))
 					Cheats::ArrestAll(ETeam::TEAM_SUSPECT);
+				HostOnlyTooltip();
+
+				if (ImGui::Button("Kill All Civilians"))
+					Cheats::KillAll(ETeam::TEAM_CIVILIAN);
+
+				ImGui::SameLine();
+
+				if (ImGui::Button("Surrender All Civilians"))
+					Cheats::SurrenderAll(ETeam::TEAM_CIVILIAN);
+
 				ImGui::SameLine();
 
 				if (ImGui::Button("Arrest All Civilians"))
 					Cheats::ArrestAll(ETeam::TEAM_CIVILIAN);
-				AddDefaultTooltip("This will also automatically report them.");
+				HostOnlyTooltip();
 
 				if (ImGui::Button("Collect All Evidence"))
 					Cheats::GetAllEvidence();

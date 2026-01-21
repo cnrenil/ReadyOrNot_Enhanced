@@ -5,6 +5,22 @@ void cerrf(const char* Format, ...);
 
 using namespace SDK;
 
+struct Colors
+{
+	static const ImU32 White = IM_COL32(255, 255, 255, 255);
+	static const ImU32 Black = IM_COL32(0, 0, 0, 255);
+	static const ImU32 Red = IM_COL32(255, 0, 0, 255);
+	static const ImU32 Green = IM_COL32(0, 255, 0, 255);
+	static const ImU32 Blue = IM_COL32(0, 0, 255, 255);
+	static const ImU32 Yellow = IM_COL32(255, 255, 0, 255);
+	static const ImU32 Cyan = IM_COL32(0, 255, 255, 255);
+	static const ImU32 Magenta = IM_COL32(255, 0, 255, 255);
+	static const ImU32 Gray = IM_COL32(128, 128, 128, 255);
+	static const ImU32 Orange = IM_COL32(255, 165, 0, 255);
+	static const ImU32 Purple = IM_COL32(128, 0, 128, 255);
+	static const ImU32 Pink = IM_COL32(255, 192, 203, 255);
+};
+
 enum class ETeam
 {
 	TEAM_CIVILIAN = 0,

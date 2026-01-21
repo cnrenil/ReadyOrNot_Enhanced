@@ -149,4 +149,5 @@ struct Cheats
 	static void ChangeGameRenderSettings();
 	static void NoClipToggle();
 	static void GoTo(FVector Location);
+	static void SurrenderAll(ETeam Team); // Surrender all of a specific team
 };

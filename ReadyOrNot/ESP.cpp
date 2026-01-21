@@ -136,40 +136,20 @@ void Cheats::RenderESP()
 		AReadyOrNotGameState* GameState = GVars.GameState;
 		if (!GameState) return;
 
-        TArray<SDK::AReportableActor*> AllReportableActors = GameState->AllReportableActors;
-        for (SDK::AReportableActor* ReportableActor : AllReportableActors)
+        TArray<AReportableActor*> AllReportableActors = GameState->AllReportableActors;
+        for (AReportableActor* ReportableActor : AllReportableActors)
 		{
 	        if (!ReportableActor || !Utils::IsValidActor(ReportableActor)) continue;
 
             FVector2D ObjectiveScreen;
-
+            
             if (GVars.PlayerController->ProjectWorldLocationToScreen(ReportableActor->K2_GetActorLocation(), &ObjectiveScreen, true))
             {
-		        ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ObjectiveScreen.X, ObjectiveScreen.Y), 3, IM_COL32(0, 255, 0, 255));
-				ImGui::GetBackgroundDrawList()->AddText(ImVec2(ObjectiveScreen.X + 5, ObjectiveScreen.Y - 5), IM_COL32(0, 255, 0, 255), ReportableActor->ReportableName.ToString().c_str());
+                ImU32 ObjectiveColor = ReportableActor->bReportableEnabled ? Colors::Gray : Colors::Green;
+		        ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ObjectiveScreen.X, ObjectiveScreen.Y), 3, ObjectiveColor);
+				ImGui::GetBackgroundDrawList()->AddText(ImVec2(ObjectiveScreen.X + 5, ObjectiveScreen.Y - 5), ObjectiveColor, ReportableActor->ReportableName.ToString().c_str());
             }
 	    }
-
-		//TArray<AActor*> Actors = GVars.Level->Actors;
-  //      for (AActor* Item : Actors)
-  //      {
-  //          if (!Item || !Utils::IsValidActor(Item)) continue;
-		//	if (!Item->IsA(ABaseMagazineWeapon::StaticClass())) continue;
-
-		//	ABaseItem* BaseItem = reinterpret_cast<ABaseMagazineWeapon*>(Item);
-  //          bool IsCollected = BaseItem->EvidenceComponent->IsEvidenceCollected();
-		//	bool CanBeCollected = BaseItem->EvidenceComponent->CanBeCollected();
-
-		//	FVector GunLocation = Item->K2_GetActorLocation();
-		//	//GunLocation.Z -= 140.0f; // Adjust height to be closer to the gun because it is off for some reason
-
-  //          FVector2D ItemScreen;
-  //          if (!IsCollected && CanBeCollected && GVars.PlayerController->ProjectWorldLocationToScreen(GunLocation, &ItemScreen, true))
-  //          {
-  //              ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(ItemScreen.X, ItemScreen.Y), 3, IM_COL32(0, 255, 0, 255));
-		//		ImGui::GetBackgroundDrawList()->AddText(ImVec2(ItemScreen.X + 5, ItemScreen.Y - 5), IM_COL32(0, 255, 0, 255), BaseItem->ItemName.ToString().c_str());
-  //          }
-  //      }
 	}
 
 	TArray<AActor*> ActorsCopy = Level->Actors; // snapshot to prevent mid-iteration changes causing crashes
@@ -191,10 +171,15 @@ void Cheats::RenderESP()
 				else if (((ATrapActor*)Actor)->TrapType == ETrapType::Alarm)
 					TrapTypeName = "Alarm Trap";
 
-        		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(TrapScreen.X, TrapScreen.Y), 3, IM_COL32(255, 0, 0, 255));
-        		ImGui::GetBackgroundDrawList()->AddText(ImVec2(TrapScreen.X + 5, TrapScreen.Y - 5), IM_COL32(255, 0, 0, 255), TrapTypeName);
+        		ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(TrapScreen.X, TrapScreen.Y), 3, Colors::Red);
+        		ImGui::GetBackgroundDrawList()->AddText(ImVec2(TrapScreen.X + 5, TrapScreen.Y - 5), Colors::Red, TrapTypeName);
         		continue;
         	}
+        }
+
+        if (true) // Change to CVars.ShowGunESP
+        {
+
         }
 
         AReadyOrNotCharacter* TargetActor = nullptr;
