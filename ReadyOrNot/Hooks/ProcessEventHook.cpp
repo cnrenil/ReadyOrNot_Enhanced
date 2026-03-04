@@ -20,34 +20,45 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 	bInsideHook = true;
 
 	try {
-        // Debug logging (Move inside condition or throttle if needed)
 		if (CVars.Debug)
 		{
 			const std::string FuncName = Function->GetName();
 			const std::string ObjName = Object->GetName();
 
-			bool bFunctionPass =
-				TextVars.DebugFunctionNameMustInclude.empty() ||
-				FuncName.find(TextVars.DebugFunctionNameMustInclude) != std::string::npos;
+			std::string lowerName = FuncName;
+			std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
 
-			bool bObjectPass =
-				TextVars.DebugFunctionObjectMustInclude.empty() ||
-				ObjName.find(TextVars.DebugFunctionObjectMustInclude) != std::string::npos;
+			bool bHasFunctionFilter = !TextVars.DebugFunctionNameMustInclude.empty();
+			bool bHasObjectFilter = !TextVars.DebugFunctionObjectMustInclude.empty();
 
-			if (bFunctionPass && bObjectPass)
+			bool bFunctionPass = bHasFunctionFilter && FuncName.find(TextVars.DebugFunctionNameMustInclude) != std::string::npos;
+			bool bObjectPass = bHasObjectFilter && ObjName.find(TextVars.DebugFunctionObjectMustInclude) != std::string::npos;
+
+			bool bIsBulletEvent = !bHasFunctionFilter && !bHasObjectFilter && 
+								  (lowerName.find("hit") != std::string::npos || 
+								   lowerName.find("impact") != std::string::npos || 
+								   lowerName.find("deflect") != std::string::npos || 
+								   lowerName.find("ricochet") != std::string::npos ||
+								   lowerName.find("bullet") != std::string::npos ||
+								   lowerName.find("damage") != std::string::npos);
+
+			bool bShouldLog = false;
+			
+			if (bHasFunctionFilter || bHasObjectFilter) {
+				bool fMatch = bHasFunctionFilter ? bFunctionPass : true;
+				bool oMatch = bHasObjectFilter ? bObjectPass : true;
+				bShouldLog = (fMatch && oMatch);
+			} else {
+				bShouldLog = bIsBulletEvent;
+			}
+
+			if (bShouldLog)
 			{
-				if (!CVars.SaveDebugToFile)
+				std::ofstream debugFile("ProcessEventLog.txt", std::ios::app);
+				if (debugFile.is_open())
 				{
-					printf("Function: %s | Object: %s\n", FuncName.c_str(), ObjName.c_str());
-				}
-				else
-				{
-					std::ofstream debugFile("ProcessEventLog.txt", std::ios::app);
-					if (debugFile.is_open())
-					{
-						debugFile << "Function: " << FuncName << " | Class: " << (Object->Class ? Object->Class->GetName() : "None") << " | Object: " << ObjName << "\n";
-						debugFile.close();
-					}
+					debugFile << "[DEBUG] Function: " << FuncName << " | Class: " << (Object->Class ? Object->Class->GetName() : "None") << " | Object: " << ObjName << "\n";
+					debugFile.close();
 				}
 			}
 		}
@@ -56,106 +67,126 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 		{
 			if (Function->Name.ComparisonIndex != 0)
 			{
-				if (Object->IsA(ABaseMagazineWeapon::StaticClass()))
+				const std::string FuncName = Function->GetName();
+
+				if (FuncName == "Server_OnFire" || FuncName == "Multicast_OnFire" || FuncName == "OnFire")
 				{
-					const std::string FuncName = Function->GetName();
-					if (FuncName == "Server_OnFire")
+					if (Object->IsA(ABaseMagazineWeapon::StaticClass()))
 					{
 						auto* Weapon = static_cast<const ABaseMagazineWeapon*>(Object);
-						auto* FireParams = static_cast<Params::BaseMagazineWeapon_OnFire*>(Params);
+						if (!Weapon || !Weapon->IsA(ABaseMagazineWeapon::StaticClass())) return;
 
-						if (Weapon && FireParams)
-						{
-							// Player-only logic: Silent Aim and Shoot From Reticle
-							bool IsLocalPlayerShot = (GVars.ReadyOrNotChar && Utils::IsValidActor(GVars.ReadyOrNotChar) && Weapon->Owner == GVars.ReadyOrNotChar);
-							
-							if (IsLocalPlayerShot)
-							{
-								if (CVars.ShootFromReticle && GVars.PlayerController && Utils::IsValidActor(GVars.PlayerController))
-								{
-									FVector SpawnLoc;
-									FVector Direction;
+						bool IsLocalPlayerShot = (GVars.ReadyOrNotChar && Utils::IsValidActor(GVars.ReadyOrNotChar) && Weapon->Owner == GVars.ReadyOrNotChar);
+
+						FVector TracerStart; // Where the line starts VISUALLY (Muzzle)
+						FVector ShotStart;   // Where the bullet starts LOGICALLY (Muzzle or Reticle)
+						FVector Direction;
+						int32 Seed = 0;
+						bool ShouldAddTracer = false;
+
+						if (FuncName == "Server_OnFire") {
+							auto* P = static_cast<Params::BaseMagazineWeapon_Server_OnFire*>(Params);
+							if (IsLocalPlayerShot) {
+								if (CVars.ShootFromReticle && GVars.PlayerController && Utils::IsValidActor(GVars.PlayerController)) {
+									FVector ReticleSpawnLoc, ReticleDir;
 									if (GVars.PlayerController->DeprojectScreenPositionToWorld(
 										GVars.ScreenSize.x / 2.0f + MiscSettings.ReticlePosition.x,
 										GVars.ScreenSize.y / 2.0f + MiscSettings.ReticlePosition.y,
-										&SpawnLoc,
-										&Direction
+										&ReticleSpawnLoc, &ReticleDir
 									)) {
-										FireParams->SpawnLoc = SpawnLoc;
-										FireParams->Direction = UKismetMathLibrary::Conv_VectorToRotator(Direction);
+										P->SpawnLoc = ReticleSpawnLoc;
+										P->Direction = UKismetMathLibrary::Conv_VectorToRotator(ReticleDir);
 									}
 								}
-
-								if (CVars.SilentAim)
-									Cheats::SilentAim(FireParams);
+								if (CVars.SilentAim) Cheats::SilentAim(P, true);
 							}
+						}
+						else if (FuncName == "OnFire") {
+							auto* P = static_cast<Params::BaseMagazineWeapon_OnFire*>(Params);
+							if (IsLocalPlayerShot) {
+								if (CVars.ShootFromReticle && GVars.PlayerController && Utils::IsValidActor(GVars.PlayerController)) {
+									FVector ReticleSpawnLoc, ReticleDir;
+									if (GVars.PlayerController->DeprojectScreenPositionToWorld(
+										GVars.ScreenSize.x / 2.0f + MiscSettings.ReticlePosition.x,
+										GVars.ScreenSize.y / 2.0f + MiscSettings.ReticlePosition.y,
+										&ReticleSpawnLoc, &ReticleDir
+									)) {
+										P->SpawnLoc = ReticleSpawnLoc;
+										P->Direction = UKismetMathLibrary::Conv_VectorToRotator(ReticleDir);
+									}
+								}
+								if (CVars.SilentAim) Cheats::SilentAim(P, false);
+							}
+						}
+						else { // Multicast_OnFire
+							auto* P = static_cast<Params::BaseMagazineWeapon_Multicast_OnFire*>(Params);
+							TracerStart = P->SpawnLoc;
+							ShotStart = P->SpawnLoc;
+							Direction = FVector(P->DirectionNet.X, P->DirectionNet.Y, P->DirectionNet.Z);
+							ShouldAddTracer = true;
+						}
 
-							// Global logic: Bullet Tracers (captured for everyone if enabled)
-							if (ESPSettings.BulletTracers)
+						if (ESPSettings.BulletTracers && ShouldAddTracer)
+						{
+							BulletTracer NewTracer;
+							FVector MaxEnd = TracerStart + Direction * 15000.0f;
+							
+							NewTracer.Points.push_back(TracerStart);
+
+							FVector CurrentTraceStart = TracerStart;
+							TArray<AActor*> IgnoreActors;
+							if (GVars.ReadyOrNotChar) IgnoreActors.Add(GVars.ReadyOrNotChar);
+
+							bool bHitSolid = false;
+							for (int j = 0; j < 3; j++)
 							{
-								BulletTracer NewTracer;
-								FVector TrailStart = FireParams->SpawnLoc;
-								FVector DirectionVec = Utils::FRotatorToVector(FireParams->Direction);
-								FVector TrailMaxEnd = TrailStart + DirectionVec * 15000.0; // Increased range
-								
-								NewTracer.Points.push_back(TrailStart);
-
-								FVector CurrentTraceStart = TrailStart;
-								TArray<AActor*> IgnoreActors;
-								// Always ignore the shooter
-								if (Weapon->Owner && Weapon->Owner->IsA(AActor::StaticClass()))
-									IgnoreActors.Add(static_cast<AActor*>(Weapon->Owner));
-
-								for (int j = 0; j < 3; j++)
+								FHitResult HitResult;
+								if (GVars.World && GVars.World->VTable && UKismetSystemLibrary::LineTraceSingle(
+									GVars.World,
+									CurrentTraceStart,
+									MaxEnd,
+									ETraceTypeQuery::TraceTypeQuery1,
+									true,
+									IgnoreActors,
+									EDrawDebugTrace::None,
+									&HitResult,
+									true,
+									FLinearColor(),
+									FLinearColor(),
+									0.0f
+								))
 								{
-									FHitResult HitResult;
-									if (GVars.World && GVars.World->VTable && UKismetSystemLibrary::LineTraceSingle(
-										GVars.World,
-										CurrentTraceStart,
-										TrailMaxEnd,
-										ETraceTypeQuery::TraceTypeQuery1,
-										true,
-										IgnoreActors,
-										EDrawDebugTrace::None,
-										&HitResult,
-										true,
-										FLinearColor(),
-										FLinearColor(),
-										0.0f
-									))
+									if (HitResult.bBlockingHit && HitResult.Location.X != 0.0f)
 									{
-										if (HitResult.bBlockingHit)
-										{
-											NewTracer.Points.push_back(HitResult.Location);
-											// Reset start to just past the hit for next segment
-											CurrentTraceStart = HitResult.Location + DirectionVec * 2.0f;
-										}
-										else
-										{
-											NewTracer.Points.push_back(TrailMaxEnd);
-											break;
-										}
+										NewTracer.Points.push_back(HitResult.Location);
+										bHitSolid = true;
+										CurrentTraceStart = HitResult.Location + Direction * 3.0f;
 									}
 									else
 									{
-										NewTracer.Points.push_back(TrailMaxEnd);
+										NewTracer.Points.push_back(MaxEnd);
 										break;
 									}
 								}
-
-								NewTracer.CreationTime = ImGui::GetTime();
-								
+								else
 								{
-									std::lock_guard<std::mutex> lock(TracerMutex);
-									BulletTracersList.push_back(NewTracer);
+									NewTracer.Points.push_back(MaxEnd);
+									break;
 								}
 							}
+
+							NewTracer.CreationTime = ImGui::GetTime();
+							NewTracer.bClosed = bHitSolid;
+
+							std::lock_guard<std::mutex> lock(TracerMutex);
+							BulletTracersList.push_back(NewTracer);
 						}
 					}
 				}
 			}
 		}
-	} catch (...) {
+	}
+	catch (...) {
 		// Suppress exceptions
 	}
 

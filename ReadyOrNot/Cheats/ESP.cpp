@@ -420,13 +420,16 @@ void Cheats::RenderESP()
 			FVector CamLoc = GVars.PlayerController->PlayerCameraManager->GetCameraLocation();
 			FVector CamFwd = GVars.PlayerController->PlayerCameraManager->GetActorForwardVector();
 
-			for (size_t i = 0; i < it->Points.size(); i++)
+			size_t PointsCount = it->Points.size();
+
+			for (size_t i = 0; i < PointsCount; i++)
 			{
 				FVector P1 = it->Points[i];
 				FVector2D p1Screen;
 				bool bP1Visible = GVars.PlayerController->ProjectWorldLocationToScreen(P1, &p1Screen, true);
 
-				if (i + 1 < it->Points.size())
+				// Draw the segment if we haven't reached the end
+				if (i + 1 < PointsCount)
 				{
 					FVector P2 = it->Points[i+1];
 					FVector2D p2Screen;
@@ -442,23 +445,17 @@ void Cheats::RenderESP()
 					}
 					else if (bP1Visible || bP2Visible) 
 					{
-						// One point is behind us. Let's clip the line at the camera plane (plus a small epsilon)
-						// Helper to get distance from camera plane (Dot product with forward vector)
 						auto GetDist = [&](const FVector& P) { return ((P.X - CamLoc.X) * CamFwd.X + (P.Y - CamLoc.Y) * CamFwd.Y + (P.Z - CamLoc.Z) * CamFwd.Z); };
-						
 						float d1 = GetDist(P1);
 						float d2 = GetDist(P2);
-						float epsilon = 1.0f; // 1 unit in front of camera
+						float epsilon = 1.0f;
 
 						if ((d1 < epsilon && d2 >= epsilon) || (d2 < epsilon && d1 >= epsilon))
 						{
 							float t = (epsilon - d1) / (d2 - d1);
 							FVector ClippedPoint = P1 + (P2 - P1) * t;
-							
 							if (d1 < epsilon) P1_Final = ClippedPoint;
 							else P2_Final = ClippedPoint;
-
-							// Re-project the modified points
 							GVars.PlayerController->ProjectWorldLocationToScreen(P1_Final, &p1Screen, true);
 							GVars.PlayerController->ProjectWorldLocationToScreen(P2_Final, &p2Screen, true);
 							bCanDraw = true;
@@ -469,16 +466,14 @@ void Cheats::RenderESP()
 					{
 						ImVec2 start(p1Screen.X, p1Screen.Y);
 						ImVec2 end(p2Screen.X, p2Screen.Y);
-
-						// NEON GLOW EFFECT
 						ImGui::GetBackgroundDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(BaseColor.x, BaseColor.y, BaseColor.z, BaseColor.w * 0.2f)), 6.0f);
 						ImGui::GetBackgroundDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(BaseColor.x, BaseColor.y, BaseColor.z, BaseColor.w * 0.5f)), 3.0f);
 						ImGui::GetBackgroundDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, BaseColor.w)), 1.0f);
 					}
 				}
 
-				// Draw impact points (except muzzle)
-				if (i > 0 && bP1Visible)
+				// Draw impact points (skip the dummy far point if not closed)
+				if (i > 0 && bP1Visible && (it->bClosed || i < PointsCount - 1))
 				{
 					ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(p1Screen.X, p1Screen.Y), 6.5f, ImGui::ColorConvertFloat4ToU32(ImVec4(BaseColor.x, BaseColor.y, BaseColor.z, BaseColor.w * 0.3f)));
 					ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(p1Screen.X, p1Screen.Y), 4.0f, ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, BaseColor.w)));

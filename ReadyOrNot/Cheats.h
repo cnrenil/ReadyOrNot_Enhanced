@@ -6,6 +6,8 @@ inline bool AimbotKeyDown = false;
 struct BulletTracer {
 	std::vector<FVector> Points;
 	float CreationTime;
+	int32 Seed;    // Used to match hits from Server_HitscanHit
+	bool bClosed;  // Whether we've already reached MaxPoints or finished
 };
 
 inline std::mutex TracerMutex;
@@ -154,7 +156,7 @@ struct Cheats
 	static void InstaKill();
 	static void RenderESP();
 	static void SetPlayerSpeed();
-	static void SilentAim(Params::BaseMagazineWeapon_OnFire* FireParams);
+	static void SilentAim(void* Params, bool bIsServerOnFire = false);
 	static void AddMag();
 	static void ArrestAll(ETeam Team); // Arrest all of a specific team
 	static void KillAll(ETeam Team);   // Kill all of a specific team

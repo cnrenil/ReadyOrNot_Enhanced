@@ -1,10 +1,9 @@
 #include "pch.h"
 #include "Engine.h"
 
-void Cheats::SilentAim(Params::BaseMagazineWeapon_OnFire* FireParams)
+void Cheats::SilentAim(void* FireParams, bool bIsServerOnFire)
 {
 	if (!CVars.SilentAim) return;
-
 	if (!GVars.ReadyOrNotChar) return;
 
 	AActor* TargetActor =
@@ -20,27 +19,36 @@ void Cheats::SilentAim(Params::BaseMagazineWeapon_OnFire* FireParams)
 			SilentAimSettings.TargetAll,
 			SilentAimSettings.ExcludeTargetSuspects);
 
-		if (!TargetActor) return;
+	if (!TargetActor) return;
 
-		float RandomValue = UKismetMathLibrary::RandomFloatInRange(0.0f, 100.0f);
-		bool bShouldShoot = (RandomValue <= SilentAimSettings.HitChance);
-		if (!bShouldShoot) return;
+	float RandomValue = UKismetMathLibrary::RandomFloatInRange(0.0f, 100.0f);
+	bool bShouldShoot = (RandomValue <= SilentAimSettings.HitChance);
+	if (!bShouldShoot) return;
 
-		std::wstring WideString = UtfN::StringToWString(TextVars.SilentAimBone);
-		FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
+	std::wstring WideString = UtfN::StringToWString(TextVars.SilentAimBone);
+	FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
 
-		if (!((AReadyOrNotCharacter*)TargetActor)->Mesh) return;
-		FVector TargetLocation = ((AReadyOrNotCharacter*)TargetActor)->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
+	if (!((AReadyOrNotCharacter*)TargetActor)->Mesh) return;
+	FVector TargetLocation = ((AReadyOrNotCharacter*)TargetActor)->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
 
 	if (SilentAimSettings.MagicBullet)
 	{
-		FireParams->SpawnLoc = TargetLocation;
+		if (bIsServerOnFire)
+			static_cast<Params::BaseMagazineWeapon_Server_OnFire*>(FireParams)->SpawnLoc = TargetLocation;
+		else
+			static_cast<Params::BaseMagazineWeapon_OnFire*>(FireParams)->SpawnLoc = TargetLocation;
 	}
 	else
 	{
-		FVector MuzzleLocation = FireParams->SpawnLoc;
+		FVector MuzzleLocation = bIsServerOnFire ? 
+			static_cast<Params::BaseMagazineWeapon_Server_OnFire*>(FireParams)->SpawnLoc : 
+			static_cast<Params::BaseMagazineWeapon_OnFire*>(FireParams)->SpawnLoc;
+			
 		FVector DirectionVec = TargetLocation - MuzzleLocation;
 
-		FireParams->Direction = UKismetMathLibrary::Conv_VectorToRotator(DirectionVec);
+		if (bIsServerOnFire)
+			static_cast<Params::BaseMagazineWeapon_Server_OnFire*>(FireParams)->Direction = UKismetMathLibrary::Conv_VectorToRotator(DirectionVec);
+		else
+			static_cast<Params::BaseMagazineWeapon_OnFire*>(FireParams)->Direction = UKismetMathLibrary::Conv_VectorToRotator(DirectionVec);
 	}
 }
