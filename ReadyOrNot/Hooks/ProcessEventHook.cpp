@@ -64,38 +64,47 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 						auto* Weapon = static_cast<const ABaseMagazineWeapon*>(Object);
 						auto* FireParams = static_cast<Params::BaseMagazineWeapon_OnFire*>(Params);
 
-						if (Weapon && FireParams && GVars.ReadyOrNotChar && Utils::IsValidActor(GVars.ReadyOrNotChar) && Weapon->Owner == GVars.ReadyOrNotChar)
+						if (Weapon && FireParams)
 						{
-							if (CVars.ShootFromReticle && GVars.PlayerController && Utils::IsValidActor(GVars.PlayerController))
+							// Player-only logic: Silent Aim and Shoot From Reticle
+							bool IsLocalPlayerShot = (GVars.ReadyOrNotChar && Utils::IsValidActor(GVars.ReadyOrNotChar) && Weapon->Owner == GVars.ReadyOrNotChar);
+							
+							if (IsLocalPlayerShot)
 							{
-								FVector SpawnLoc;
-								FVector Direction;
-								if (GVars.PlayerController->DeprojectScreenPositionToWorld(
-									GVars.ScreenSize.x / 2.0f + MiscSettings.ReticlePosition.x,
-									GVars.ScreenSize.y / 2.0f + MiscSettings.ReticlePosition.y,
-									&SpawnLoc,
-									&Direction
-								)) {
-									FireParams->SpawnLoc = SpawnLoc;
-									FireParams->Direction = UKismetMathLibrary::Conv_VectorToRotator(Direction);
+								if (CVars.ShootFromReticle && GVars.PlayerController && Utils::IsValidActor(GVars.PlayerController))
+								{
+									FVector SpawnLoc;
+									FVector Direction;
+									if (GVars.PlayerController->DeprojectScreenPositionToWorld(
+										GVars.ScreenSize.x / 2.0f + MiscSettings.ReticlePosition.x,
+										GVars.ScreenSize.y / 2.0f + MiscSettings.ReticlePosition.y,
+										&SpawnLoc,
+										&Direction
+									)) {
+										FireParams->SpawnLoc = SpawnLoc;
+										FireParams->Direction = UKismetMathLibrary::Conv_VectorToRotator(Direction);
+									}
 								}
+
+								if (CVars.SilentAim)
+									Cheats::SilentAim(FireParams);
 							}
 
-							if (CVars.SilentAim)
-								Cheats::SilentAim(FireParams);
-
+							// Global logic: Bullet Tracers (captured for everyone if enabled)
 							if (ESPSettings.BulletTracers)
 							{
 								BulletTracer NewTracer;
-								FVector MuzzleLoc = FireParams->SpawnLoc;
+								FVector TrailStart = FireParams->SpawnLoc;
 								FVector DirectionVec = Utils::FRotatorToVector(FireParams->Direction);
-								FVector MaxEnd = MuzzleLoc + DirectionVec * 10000.0;
+								FVector TrailMaxEnd = TrailStart + DirectionVec * 15000.0; // Increased range
 								
-								NewTracer.Points.push_back(MuzzleLoc);
+								NewTracer.Points.push_back(TrailStart);
 
-								FVector CurrentTraceStart = MuzzleLoc;
+								FVector CurrentTraceStart = TrailStart;
 								TArray<AActor*> IgnoreActors;
-								if (GVars.ReadyOrNotChar) IgnoreActors.Add(GVars.ReadyOrNotChar);
+								// Always ignore the shooter
+								if (Weapon->Owner && Weapon->Owner->IsA(AActor::StaticClass()))
+									IgnoreActors.Add(static_cast<AActor*>(Weapon->Owner));
 
 								for (int j = 0; j < 3; j++)
 								{
@@ -103,7 +112,7 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 									if (GVars.World && GVars.World->VTable && UKismetSystemLibrary::LineTraceSingle(
 										GVars.World,
 										CurrentTraceStart,
-										MaxEnd,
+										TrailMaxEnd,
 										ETraceTypeQuery::TraceTypeQuery1,
 										true,
 										IgnoreActors,
@@ -123,13 +132,13 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 										}
 										else
 										{
-											NewTracer.Points.push_back(MaxEnd);
+											NewTracer.Points.push_back(TrailMaxEnd);
 											break;
 										}
 									}
 									else
 									{
-										NewTracer.Points.push_back(MaxEnd);
+										NewTracer.Points.push_back(TrailMaxEnd);
 										break;
 									}
 								}

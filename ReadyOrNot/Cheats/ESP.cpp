@@ -403,57 +403,85 @@ void Cheats::RenderESP()
 			float FadeRatio = 1.0f - (Age / ESPSettings.TracerDuration);
 			if (FadeRatio < 0.0f) FadeRatio = 0.0f;
 			
-			ImU32 ColorToUse;
+			ImVec4 BaseColor;
 			if (ESPSettings.TracerRainbow)
 			{
 				float Hue = fmodf(it->CreationTime * 0.5f, 1.0f);
 				float R, G, B;
 				ImGui::ColorConvertHSVtoRGB(Hue, 1.0f, 1.0f, R, G, B);
-				ColorToUse = IM_COL32((int)(R * 255), (int)(G * 255), (int)(B * 255), (int)(FadeRatio * 255));
+				BaseColor = ImVec4(R, G, B, FadeRatio);
 			}
 			else 
 			{
-				ColorToUse = IM_COL32(
-					(int)(ESPSettings.TracerColor.x * 255), 
-					(int)(ESPSettings.TracerColor.y * 255), 
-					(int)(ESPSettings.TracerColor.z * 255), 
-					(int)(FadeRatio * 255)
-				);
+				BaseColor = ImVec4(ESPSettings.TracerColor.x, ESPSettings.TracerColor.y, ESPSettings.TracerColor.z, FadeRatio);
 			}
 
-			// Draw segments
+			// Draw segments with 3D clipping to prevent disappearing when behind camera
+			FVector CamLoc = GVars.PlayerController->PlayerCameraManager->GetCameraLocation();
+			FVector CamFwd = GVars.PlayerController->PlayerCameraManager->GetActorForwardVector();
+
 			for (size_t i = 0; i < it->Points.size(); i++)
 			{
+				FVector P1 = it->Points[i];
 				FVector2D p1Screen;
-				bool bP1Visible = GVars.PlayerController->ProjectWorldLocationToScreen(it->Points[i], &p1Screen, true);
-
-				// Draw impact point circle
-				if (bP1Visible)
-				{
-					ImGui::GetBackgroundDrawList()->AddCircleFilled(
-						ImVec2(p1Screen.X, p1Screen.Y), 
-						2.0f, 
-						ColorToUse
-					);
-				}
+				bool bP1Visible = GVars.PlayerController->ProjectWorldLocationToScreen(P1, &p1Screen, true);
 
 				if (i + 1 < it->Points.size())
 				{
+					FVector P2 = it->Points[i+1];
 					FVector2D p2Screen;
-					bool bP2Visible = GVars.PlayerController->ProjectWorldLocationToScreen(it->Points[i+1], &p2Screen, true);
+					bool bP2Visible = GVars.PlayerController->ProjectWorldLocationToScreen(P2, &p2Screen, true);
 					
-					// Draw line if at least one point is on screen (clipping will be handled by ImGui or we could do it manually)
-					// Actually, ImGui's AddLine is enough if we have valid coordinates, 
-					// but UE's ProjectWorldLocationToScreen returns false for points behind the camera.
+					FVector P1_Final = P1;
+					FVector P2_Final = P2;
+					bool bCanDraw = false;
+
 					if (bP1Visible && bP2Visible)
 					{
-						ImGui::GetBackgroundDrawList()->AddLine(
-							ImVec2(p1Screen.X, p1Screen.Y),
-							ImVec2(p2Screen.X, p2Screen.Y),
-							ColorToUse,
-							1.5f
-						);
+						bCanDraw = true;
 					}
+					else if (bP1Visible || bP2Visible) 
+					{
+						// One point is behind us. Let's clip the line at the camera plane (plus a small epsilon)
+						// Helper to get distance from camera plane (Dot product with forward vector)
+						auto GetDist = [&](const FVector& P) { return ((P.X - CamLoc.X) * CamFwd.X + (P.Y - CamLoc.Y) * CamFwd.Y + (P.Z - CamLoc.Z) * CamFwd.Z); };
+						
+						float d1 = GetDist(P1);
+						float d2 = GetDist(P2);
+						float epsilon = 1.0f; // 1 unit in front of camera
+
+						if ((d1 < epsilon && d2 >= epsilon) || (d2 < epsilon && d1 >= epsilon))
+						{
+							float t = (epsilon - d1) / (d2 - d1);
+							FVector ClippedPoint = P1 + (P2 - P1) * t;
+							
+							if (d1 < epsilon) P1_Final = ClippedPoint;
+							else P2_Final = ClippedPoint;
+
+							// Re-project the modified points
+							GVars.PlayerController->ProjectWorldLocationToScreen(P1_Final, &p1Screen, true);
+							GVars.PlayerController->ProjectWorldLocationToScreen(P2_Final, &p2Screen, true);
+							bCanDraw = true;
+						}
+					}
+
+					if (bCanDraw)
+					{
+						ImVec2 start(p1Screen.X, p1Screen.Y);
+						ImVec2 end(p2Screen.X, p2Screen.Y);
+
+						// NEON GLOW EFFECT
+						ImGui::GetBackgroundDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(BaseColor.x, BaseColor.y, BaseColor.z, BaseColor.w * 0.2f)), 6.0f);
+						ImGui::GetBackgroundDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(BaseColor.x, BaseColor.y, BaseColor.z, BaseColor.w * 0.5f)), 3.0f);
+						ImGui::GetBackgroundDrawList()->AddLine(start, end, ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, BaseColor.w)), 1.0f);
+					}
+				}
+
+				// Draw impact points (except muzzle)
+				if (i > 0 && bP1Visible)
+				{
+					ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(p1Screen.X, p1Screen.Y), 6.5f, ImGui::ColorConvertFloat4ToU32(ImVec4(BaseColor.x, BaseColor.y, BaseColor.z, BaseColor.w * 0.3f)));
+					ImGui::GetBackgroundDrawList()->AddCircleFilled(ImVec2(p1Screen.X, p1Screen.Y), 4.0f, ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, BaseColor.w)));
 				}
 			}
 			++it;
