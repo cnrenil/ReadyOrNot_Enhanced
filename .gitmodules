@@ -1,0 +1,6 @@
+[submodule "ReadyOrNot/ImGui"]
+	path = ReadyOrNot/ImGui
+	url = https://github.com/ocornut/imgui.git
+[submodule "ReadyOrNot/minhook"]
+	path = ReadyOrNot/minhook
+	url = https://github.com/TsudaKageyu/minhook.git
