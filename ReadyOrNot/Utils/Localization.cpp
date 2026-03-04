@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "Localization.h"
-#include <windows.h>
-#include <unordered_map>
 
 namespace Localization
 {

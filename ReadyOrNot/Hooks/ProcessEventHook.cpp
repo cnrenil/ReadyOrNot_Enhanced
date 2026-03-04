@@ -1,18 +1,19 @@
 #include "pch.h"
 #include "Engine.h"
-#include "Cheats.h"
 
 using tProcessEvent = void(*)(const UObject*, UFunction*, void*);
 tProcessEvent oProcessEvent = nullptr;
 
 extern std::atomic<bool> Cleaning;
-extern std::atomic<int> g_PresentCount;
+extern std::atomic<int> g_ProcessEventCount;
 
 void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 {
+	g_ProcessEventCount.fetch_add(1);
 	static thread_local bool bInsideHook = false;
-	if (!Object || !Function || Cleaning.load() || bInsideHook) {
+	if (!Object || !Function || Cleaning.load() || bInsideHook || Utils::bIsLoading) {
 		if (oProcessEvent) oProcessEvent(Object, Function, Params);
+		g_ProcessEventCount.fetch_sub(1);
 		return;
 	}
 
@@ -86,38 +87,51 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 							if (ESPSettings.BulletTracers)
 							{
 								BulletTracer NewTracer;
-								NewTracer.Start = FireParams->SpawnLoc;
-								// Direction is an FRotator. We need to convert it to a vector and multiply by a reasonable distance, e.g., 10000.
+								FVector MuzzleLoc = FireParams->SpawnLoc;
 								FVector DirectionVec = Utils::FRotatorToVector(FireParams->Direction);
-								NewTracer.End = FVector(NewTracer.Start.X + DirectionVec.X * 10000.0, 
-														NewTracer.Start.Y + DirectionVec.Y * 10000.0, 
-														NewTracer.Start.Z + DirectionVec.Z * 10000.0);
+								FVector MaxEnd = MuzzleLoc + DirectionVec * 10000.0;
 								
-								// Perform LineTrace to find the actual impact point
+								NewTracer.Points.push_back(MuzzleLoc);
+
+								FVector CurrentTraceStart = MuzzleLoc;
 								TArray<AActor*> IgnoreActors;
-								IgnoreActors.Add(GVars.ReadyOrNotChar);
-								
-								FHitResult HitResult;
-								bool bDidHit = UKismetSystemLibrary::LineTraceSingle(
-									GVars.World,
-									NewTracer.Start,
-									NewTracer.End,
-									ETraceTypeQuery::TraceTypeQuery1,
-									true,
-									IgnoreActors,
-									EDrawDebugTrace::None,
-									&HitResult,
-									true,
-									FLinearColor(),
-									FLinearColor(),
-									1.0f
-								);
-								
-								if (bDidHit) {
-									NewTracer.End = HitResult.Location;
-									NewTracer.bHit = true;
-								} else {
-									NewTracer.bHit = false;
+								if (GVars.ReadyOrNotChar) IgnoreActors.Add(GVars.ReadyOrNotChar);
+
+								for (int j = 0; j < 3; j++)
+								{
+									FHitResult HitResult;
+									if (GVars.World && GVars.World->VTable && UKismetSystemLibrary::LineTraceSingle(
+										GVars.World,
+										CurrentTraceStart,
+										MaxEnd,
+										ETraceTypeQuery::TraceTypeQuery1,
+										true,
+										IgnoreActors,
+										EDrawDebugTrace::None,
+										&HitResult,
+										true,
+										FLinearColor(),
+										FLinearColor(),
+										0.0f
+									))
+									{
+										if (HitResult.bBlockingHit)
+										{
+											NewTracer.Points.push_back(HitResult.Location);
+											// Reset start to just past the hit for next segment
+											CurrentTraceStart = HitResult.Location + DirectionVec * 2.0f;
+										}
+										else
+										{
+											NewTracer.Points.push_back(MaxEnd);
+											break;
+										}
+									}
+									else
+									{
+										NewTracer.Points.push_back(MaxEnd);
+										break;
+									}
 								}
 
 								NewTracer.CreationTime = ImGui::GetTime();
@@ -138,6 +152,7 @@ void hkProcessEvent(const UObject* Object, UFunction* Function, void* Params)
 
 	bInsideHook = false;
 	if (oProcessEvent) oProcessEvent(Object, Function, Params);
+	g_ProcessEventCount.fetch_sub(1);
 }
 
 bool Hooks::HookProcessEvent()

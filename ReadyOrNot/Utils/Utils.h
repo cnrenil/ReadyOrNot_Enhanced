@@ -1,10 +1,6 @@
 #pragma once
-#include "Engine.h"
-
+// Core utility types and constants
 void cerrf(const char* Format, ...);
-
-using namespace SDK;
-
 struct Colors
 {
 	static const ImU32 White = IM_COL32(255, 255, 255, 255);
@@ -35,11 +31,9 @@ struct PlayerCheatData
 	bool GodMode = false;
 	bool InfAmmo = false;
 
-	// Constructor
 	PlayerCheatData() = default;
 };
 
-// Global map to store per-player cheat data
 inline std::unordered_map<APlayerCharacter*, PlayerCheatData> PlayerCheatMap;
 
 
@@ -77,7 +71,11 @@ struct Utils
 	static void Error(std::string msg);
 	static bool IsTargetSuspect(AActor* Actor);
 	static bool IsObjectiveCompletedForActor(AActor* Actor);
+	static void CacheObjectives();
+	static bool IsInLoadingState();
 
+	static inline std::vector<FName> CachedSuspectTagNames;
+	static inline bool bIsLoading = false;
 };
 
 struct Variables
@@ -92,17 +90,32 @@ struct Variables
 	ULevel* Level = nullptr;
 	ImVec2 ScreenSize;
 
-	// Constructor to initialize variables safely
 	Variables() {
-		AutoSetVariables();
+		Reset();
+	}
+
+	void Reset() {
+		this->World = nullptr;
+		this->PlayerController = nullptr;
+		this->GameState = nullptr;
+		this->Pawn = nullptr;
+		this->Character = nullptr;
+		this->ReadyOrNotChar = nullptr;
+		this->Level = nullptr;
+		this->POV = nullptr;
 	}
 
 	void AutoSetVariables() {
-		// 1. Update World first
 		UWorld* currentWorld = Utils::GetWorldSafe();
-		if (this->World != currentWorld) {
+		
+		// If world is null or changed, reset everything dependent on it
+		if (!currentWorld || this->World != currentWorld) {
+			if (this->World != currentWorld) {
+				// World actually changed - clear stale data
+				PlayerCheatMap.clear(); 
+				Utils::CachedSuspectTagNames.clear();
+			}
 			this->World = currentWorld;
-			// Reset EVERYTHING when World changes
 			this->PlayerController = nullptr;
 			this->GameState = nullptr;
 			this->Pawn = nullptr;
@@ -112,21 +125,34 @@ struct Variables
 			this->POV = nullptr;
 		}
 
-		if (!this->World || !this->World->VTable) return;
+		if (!this->World || !this->World->VTable) 
+		{
+			Utils::bIsLoading = true;
+			return;
+		}
 
-		// 2. Update Level and GameState
 		this->Level = this->World->PersistentLevel;
 
-		if (this->World->GameState && this->World->GameState->VTable && this->World->GameState->IsA(AReadyOrNotGameState::StaticClass()))
-			this->GameState = static_cast<AReadyOrNotGameState*>(this->World->GameState);
-		else
+		if (this->World->GameState && this->World->GameState->VTable) {
+			if (this->World->GameState->IsA(AReadyOrNotGameState::StaticClass())) {
+				this->GameState = static_cast<AReadyOrNotGameState*>(this->World->GameState);
+			} else {
+				this->GameState = nullptr;
+			}
+		} else {
 			this->GameState = nullptr;
+		}
 
-		// 3. Update PlayerController
+		// Update loading state
+		Utils::bIsLoading = Utils::IsInLoadingState();
+		if (Utils::bIsLoading) return;
+
+		if (this->GameState && Utils::CachedSuspectTagNames.empty())
+			Utils::CacheObjectives();
+
 		APlayerController* currentPC = Utils::GetPlayerController();
-		if (this->PlayerController != currentPC) {
+		if (!currentPC || this->PlayerController != currentPC) {
 			this->PlayerController = currentPC;
-			// Reset PC dependents
 			this->Pawn = nullptr;
 			this->Character = nullptr;
 			this->ReadyOrNotChar = nullptr;
@@ -135,22 +161,31 @@ struct Variables
 
 		if (!this->PlayerController || !this->PlayerController->VTable) return;
 
-		// 4. Update PC dependents
-		this->Pawn = this->PlayerController->Pawn;
-		if (this->Pawn && !this->Pawn->VTable) this->Pawn = nullptr;
+		// 4. Update PC dependents (Pawn/Character)
+		if (this->PlayerController->Pawn && this->PlayerController->Pawn->VTable) {
+			this->Pawn = this->PlayerController->Pawn;
+		} else {
+			this->Pawn = nullptr;
+		}
 
-		this->Character = this->PlayerController->Character;
-		if (this->Character && !this->Character->VTable) this->Character = nullptr;
-
-		if (this->Character && this->Character->IsA(AReadyOrNotCharacter::StaticClass()))
-			this->ReadyOrNotChar = static_cast<AReadyOrNotCharacter*>(this->Character);
-		else
+		if (this->PlayerController->Character && this->PlayerController->Character->VTable) {
+			this->Character = this->PlayerController->Character;
+			if (this->Character->IsA(AReadyOrNotCharacter::StaticClass())) {
+				this->ReadyOrNotChar = static_cast<AReadyOrNotCharacter*>(this->Character);
+			} else {
+				this->ReadyOrNotChar = nullptr;
+			}
+		} else {
+			this->Character = nullptr;
 			this->ReadyOrNotChar = nullptr;
+		}
 
-		if (this->PlayerController->PlayerCameraManager && this->PlayerController->PlayerCameraManager->VTable)
+		// 5. Update Camera POV
+		if (this->PlayerController->PlayerCameraManager && this->PlayerController->PlayerCameraManager->VTable) {
 			this->POV = &this->PlayerController->PlayerCameraManager->CameraCachePrivate.POV;
-		else
+		} else {
 			this->POV = nullptr;
+		}
 
 		// Update Screen size
 		if (ImGui::GetCurrentContext())

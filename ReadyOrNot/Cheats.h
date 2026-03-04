@@ -1,16 +1,11 @@
 #pragma once
-
-#include "Engine.h"
-#include "Utils/Utils.h"
 #include <mutex>
 
 inline bool AimbotKeyDown = false;
 
 struct BulletTracer {
-	FVector Start;
-	FVector End;
+	std::vector<FVector> Points;
 	float CreationTime;
-	bool bHit;
 };
 
 inline std::mutex TracerMutex;

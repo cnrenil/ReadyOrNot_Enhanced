@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "Menu.h"
-
 #include "Config/ConfigManager.h"
-#include "Utils/Localization.h"
 
 #define MAJORVERSION 2
 #define MINORVERSION 4

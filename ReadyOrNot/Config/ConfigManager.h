@@ -1,8 +1,6 @@
 #pragma once
-#include "pch.h"
-#include "Cheats.h"
-#include <fstream>
-#include <iostream>
+
+#include <string>
 
 namespace ConfigManager
 {

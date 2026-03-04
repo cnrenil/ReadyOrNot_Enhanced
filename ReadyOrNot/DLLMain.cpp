@@ -11,10 +11,13 @@ bool menu_key_pressed = false;
 
 std::atomic<HMODULE> g_hModule{ nullptr };
 std::atomic<int> g_PresentCount{ 0 };
+std::atomic<int> g_WndProcCount{ 0 };
+std::atomic<int> g_ProcessEventCount{ 0 };
 std::atomic<bool> Cleaning{ false };
 std::atomic<bool> Resizing{ false };
 
 WNDPROC oWndProc = nullptr;
+HWND g_hWnd = nullptr;
 
 // DLL entry point
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID lpReserved) {

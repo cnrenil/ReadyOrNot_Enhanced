@@ -1,15 +1,10 @@
 #include "pch.h"
-#include "Cheats.h"
-#include "Utils/Utils.h"
-#include <chrono>
-#include <cmath>
-#include <numbers>
 
 bool Init = false;
 
 void Cheats::Aimbot()
 {
-	if (!CVars.Aimbot) return;
+	if (!CVars.Aimbot || Utils::bIsLoading) return;
 
 	if (AimbotSettings.DrawFOV)
 		Utils::DrawFOV(AimbotSettings.MaxFOV, AimbotSettings.FOVThickness);

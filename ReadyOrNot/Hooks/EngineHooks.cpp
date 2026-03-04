@@ -2,21 +2,23 @@
 #include "Engine.h"
 #include "GUI/Menu.h"
 #include "Config/ConfigManager.h"
-#include "Utils/Localization.h"
-#include <atomic>
 
 extern bool init;
 extern int Frames;
 extern bool SettingsLoaded;
 extern bool menu_key_pressed;
 extern std::atomic<int> g_PresentCount;
+extern std::atomic<int> g_WndProcCount;
+extern std::atomic<int> g_ProcessEventCount;
 extern std::atomic<bool> Cleaning;
 extern std::atomic<bool> Resizing;
 extern WNDPROC oWndProc;
+extern HWND g_hWnd;
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	g_WndProcCount.fetch_add(1);
 
 	if (!Cleaning.load())
 	{
@@ -41,7 +43,9 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 	}
 
-	return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+	LRESULT result = CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
+	g_WndProcCount.fetch_sub(1);
+	return result;
 }
 
 HRESULT __stdcall Engine::hkResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount, UINT Width, UINT Height, DXGI_FORMAT NewFormat, UINT SwapChainFlags)
@@ -51,8 +55,9 @@ HRESULT __stdcall Engine::hkResizeBuffers(IDXGISwapChain* pSwapChain, UINT Buffe
 
 	Resizing.store(true);
 	
-	// Wait for any active Present processing to finish
-	while (g_PresentCount.load() > 0)
+	// Wait for any active Present processing to finish with a timeout
+	int timeout = 1000; // 1 second max
+	while (g_PresentCount.load() > 0 && timeout-- > 0)
 		Sleep(1); 
 
 	if (Engine::pRenderTargetView) {
@@ -84,6 +89,20 @@ HRESULT __stdcall Engine::hkResizeBuffers(IDXGISwapChain* pSwapChain, UINT Buffe
 
 	Resizing.store(false);
 	return hr;
+}
+
+static void UnhookResizeBuffers()
+{
+	if (!Engine::pSwapChain) return;
+
+	void** vTable = *reinterpret_cast<void***>(Engine::pSwapChain);
+	if (vTable && Engine::oResizeBuffers)
+	{
+		DWORD oldProtect;
+		VirtualProtect(&vTable[13], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
+		vTable[13] = (void*)Engine::oResizeBuffers;
+		VirtualProtect(&vTable[13], sizeof(void*), oldProtect, &oldProtect);
+	}
 }
 
 HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags)
@@ -118,6 +137,7 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 			Engine::InitImGui(hwnd);
 
 			if (hwnd) {
+				g_hWnd = hwnd;
 				oWndProc = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
 			}
 
@@ -140,11 +160,9 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 		return hr;
 	}
 
-	// Update display size and GVars
+	// Update display size
 	ImGui::GetIO().DisplaySize = ImVec2((float)Engine::sd.BufferDesc.Width, (float)Engine::sd.BufferDesc.Height);
 	GVars.ScreenSize = ImGui::GetIO().DisplaySize;
-
-	GVars.AutoSetVariables();
 
 	// Robust Input Handling
 	static bool insert_was_down = false;
@@ -167,47 +185,56 @@ HRESULT __stdcall Engine::hkPresent(IDXGISwapChain* SwapChain, UINT SyncInterval
 	ImGui::NewFrame();
 
 	try {
+		// Update GVars inside try-catch for safety
+		GVars.AutoSetVariables();
+
 		GUI::RenderMenu();
 		
-		AimbotKeyDown = (AimbotSettings.AimbotKey != ImGuiKey_None) ? ImGui::IsKeyDown(AimbotSettings.AimbotKey) : true;
-
-		if (CVars.RenderOptions) Cheats::RenderEnabledOptions();
-		if (CVars.ListPlayers) Cheats::ListPlayers();
-
-		if (GVars.World && GVars.World->K2_GetWorldSettings())
-			GVars.World->K2_GetWorldSettings()->TimeDilation = CVars.BulletTime ? 0.3f : 1.0f;
-
-		if (CVars.ESP) Cheats::RenderESP();
-		
-		if (CVars.SilentAim && GVars.ReadyOrNotChar && Utils::IsValidActor(GVars.ReadyOrNotChar))
+		if (Utils::bIsLoading) {
+			// Skip all cheat logic during loading to prevent freezes
+		}
+		else 
 		{
-			if (SilentAimSettings.DrawFOV)
-				Utils::DrawFOV(SilentAimSettings.MaxFOV, SilentAimSettings.FOVThickness);
+			AimbotKeyDown = (AimbotSettings.AimbotKey != ImGuiKey_None) ? ImGui::IsKeyDown(AimbotSettings.AimbotKey) : true;
 
-			if (SilentAimSettings.DrawArrow)
+			if (CVars.RenderOptions) Cheats::RenderEnabledOptions();
+			if (CVars.ListPlayers) Cheats::ListPlayers();
+
+			if (GVars.World && GVars.World->K2_GetWorldSettings())
+				GVars.World->K2_GetWorldSettings()->TimeDilation = CVars.BulletTime ? 0.3f : 1.0f;
+
+			if (CVars.ESP) Cheats::RenderESP();
+			
+			if (CVars.SilentAim && GVars.ReadyOrNotChar && Utils::IsValidActor(GVars.ReadyOrNotChar))
 			{
-				AActor* TargetActor = Utils::GetBestTarget(GVars.PlayerController, SilentAimSettings.TargetCivilians, SilentAimSettings.TargetArrested, SilentAimSettings.TargetSurrendered, SilentAimSettings.TargetDead, SilentAimSettings.MaxFOV, SilentAimSettings.RequiresLOS, TextVars.SilentAimBone, SilentAimSettings.TargetAll, SilentAimSettings.ExcludeTargetSuspects);
+				if (SilentAimSettings.DrawFOV)
+					Utils::DrawFOV(SilentAimSettings.MaxFOV, SilentAimSettings.FOVThickness);
 
-				if (TargetActor && Utils::IsValidActor(TargetActor))
+				if (SilentAimSettings.DrawArrow)
 				{
-					AReadyOrNotCharacter* TargetChar = reinterpret_cast<AReadyOrNotCharacter*>(TargetActor);
-					if (TargetChar->Mesh)
-					{
-						std::wstring WideString = UtfN::StringToWString(TextVars.SilentAimBone);
-						FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
-						FVector TargetLocation = TargetChar->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
+					AActor* TargetActor = Utils::GetBestTarget(GVars.PlayerController, SilentAimSettings.TargetCivilians, SilentAimSettings.TargetArrested, SilentAimSettings.TargetSurrendered, SilentAimSettings.TargetDead, SilentAimSettings.MaxFOV, SilentAimSettings.RequiresLOS, TextVars.SilentAimBone, SilentAimSettings.TargetAll, SilentAimSettings.ExcludeTargetSuspects);
 
-						Utils::DrawSnapLine(TargetLocation, SilentAimSettings.ArrowThickness);
+					if (TargetActor && Utils::IsValidActor(TargetActor))
+					{
+						AReadyOrNotCharacter* TargetChar = reinterpret_cast<AReadyOrNotCharacter*>(TargetActor);
+						if (TargetChar->Mesh)
+						{
+							std::wstring WideString = UtfN::StringToWString(TextVars.SilentAimBone);
+							FName BoneName = UKismetStringLibrary::Conv_StringToName(WideString.c_str());
+							FVector TargetLocation = TargetChar->Mesh->GetBoneTransform(BoneName, ERelativeTransformSpace::RTS_World).Translation;
+
+							Utils::DrawSnapLine(TargetLocation, SilentAimSettings.ArrowThickness);
+						}
 					}
 				}
 			}
-		}
 
-		if (CVars.Reticle) Cheats::DrawReticle();
-		if (CVars.Aimbot) Cheats::Aimbot();
-		if (CVars.TriggerBot) Cheats::TriggerBot();
-		if (CVars.SpeedEnabled) Cheats::SetPlayerSpeed();
-		if (CVars.InfAmmo) Cheats::ToggleInfAmmo();
+			if (CVars.Reticle) Cheats::DrawReticle();
+			if (CVars.Aimbot) Cheats::Aimbot();
+			if (CVars.TriggerBot) Cheats::TriggerBot();
+			if (CVars.SpeedEnabled) Cheats::SetPlayerSpeed();
+			if (CVars.InfAmmo) Cheats::ToggleInfAmmo();
+		}
 
 		if (GUI::TriggerBotKey != ImGuiKey_None && ImGui::IsKeyPressed(GUI::TriggerBotKey, false))
 			CVars.TriggerBot = !CVars.TriggerBot;
@@ -247,26 +274,29 @@ static void Cleanup(HMODULE hModule)
 	CVars.GodMode = false;
 	CVars.InfAmmo = false;
 
-	if (GVars.World)
+	if (GVars.World && GVars.World->K2_GetWorldSettings())
 		GVars.World->K2_GetWorldSettings()->TimeDilation = 1.0f;
 
-	Sleep(100);
-
-	while (g_PresentCount.load() != 0)
-		Sleep(50);
-
-	if (oWndProc) {
-		HWND hwnd = FindWindowA("UnrealWindow", "ReadyOrNot  ");
-		if (hwnd)
-			SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)oWndProc);
+	// Restore Hooks first
+	if (oWndProc && g_hWnd) {
+		SetWindowLongPtr(g_hWnd, GWLP_WNDPROC, (LONG_PTR)oWndProc);
 	}
 
+	UnhookResizeBuffers();
+	
 	MH_DisableHook(MH_ALL_HOOKS);
 	MH_Uninitialize();
 
+	// Wait for all hook threads to exit with timeout
+	int timeout = 200; // 10 seconds max (ProcessEvent is frequent)
+	while ((g_PresentCount.load() != 0 || g_WndProcCount.load() != 0 || g_ProcessEventCount.load() != 0) && timeout-- > 0)
+		Sleep(50);
+
 	ImGui_ImplDX11_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
+    if (ImGui::GetCurrentContext()) {
+	    ImGui_ImplWin32_Shutdown();
+	    ImGui::DestroyContext();
+    }
 
 	if (Engine::pRenderTargetView) {
 		Engine::pRenderTargetView->Release();

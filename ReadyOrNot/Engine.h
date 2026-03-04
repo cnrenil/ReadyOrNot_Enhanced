@@ -1,13 +1,9 @@
 #pragma once
 
-#include "pch.h"
-
-#include "minhook/include/MinHook.h"
-#include "Cheats.h"
-#include "Utils/Utils.h"
-
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
+
+using namespace SDK;
 
 struct Engine
 {

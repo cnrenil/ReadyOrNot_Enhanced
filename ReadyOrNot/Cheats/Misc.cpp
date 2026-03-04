@@ -1,8 +1,4 @@
 #include "pch.h"
-#include "Cheats.h"
-#include "Utils/Utils.h"
-
-//#include "SDK/ReadyOrNot_classes.hpp"
 
 using namespace SDK;
 
@@ -353,49 +349,58 @@ void Cheats::GetAllEvidence()
 
 void Cheats::TriggerBot()
 {
-	if (!CVars.TriggerBot) return;
-	if (!GVars.PlayerController || !GVars.ReadyOrNotChar) return;
+	if (!CVars.TriggerBot || Utils::bIsLoading) return;
+	if (!GVars.World || !GVars.PlayerController || !GVars.ReadyOrNotChar) return;
 
-	FHitResult HitResult;
+	TArray<FHitResult> HitResults;
 
-	if (UKismetSystemLibrary::LineTraceSingle(
+	// Use SphereTraceMulti to support wall penetration (TriggerBot Wallbang)
+	// This allows the TriggerBot to "see" through objects and fire if an enemy is found in the path.
+	if (UKismetSystemLibrary::SphereTraceMulti(
 		GVars.World,
 		GVars.PlayerController->PlayerCameraManager->GetCameraLocation(),
 		GVars.PlayerController->PlayerCameraManager->GetCameraLocation() + (GVars.PlayerController->PlayerCameraManager->GetActorForwardVector() * 10000.0f),
+		6.0f,
 		ETraceTypeQuery::TraceTypeQuery1,
 		false,
 		TArray<AActor*>(),
-		EDrawDebugTrace::ForDuration,
-		&HitResult,
+		EDrawDebugTrace::None,
+		&HitResults,
 		true,
-		FLinearColor(255, 0, 0, 255),
-		FLinearColor(255, 255, 255, 255),
-		5.0f
+		FLinearColor(),
+		FLinearColor(),
+		0.0f
 	))
 	{
-		if (HitResult.bBlockingHit && HitResult.HitObjectHandle.Actor.Get())
+		for (int i = 0; i < HitResults.Num(); i++)
 		{
-			AActor* HitActor = HitResult.HitObjectHandle.Actor.Get();
-			if (HitActor && (HitActor->IsA(ASuspectCharacter::StaticClass()) || MiscSettings.TriggerBotTargetsCivilians && HitActor->IsA(ACivilianCharacter::StaticClass())))
+			FHitResult& HitResult = HitResults[i];
+			if (HitResult.bBlockingHit && HitResult.HitObjectHandle.Actor.Get())
 			{
-				// Skip mission target suspects if exclusion is enabled
-				if (MiscSettings.TriggerBotExcludeTargetSuspects && Utils::IsTargetSuspect(HitActor))
-					return;
-
-				if (reinterpret_cast<AReadyOrNotCharacter*>(HitActor)->IsDeadOrUnconscious() || reinterpret_cast<AReadyOrNotCharacter*>(HitActor)->IsIncapacitated() || reinterpret_cast<AReadyOrNotCharacter*>(HitActor)->IsArrestedOrSurrendered())
-					return;
-
-				if (MiscSettings.TriggerBotUsesSilentAim && GVars.ReadyOrNotChar->GetEquippedWeapon())
+				AActor* HitActor = HitResult.HitObjectHandle.Actor.Get();
+				if (HitActor && Utils::IsValidActor(HitActor) && (HitActor->IsA(ASuspectCharacter::StaticClass()) || MiscSettings.TriggerBotTargetsCivilians && HitActor->IsA(ACivilianCharacter::StaticClass())))
 				{
-					GVars.ReadyOrNotChar->GetEquippedWeapon()->OnFire(FRotator(), HitResult.ImpactPoint);
-					return;
-				}
-				if (GVars.ReadyOrNotChar->GetEquippedWeapon())
-				{
-					GVars.ReadyOrNotChar->GetEquippedWeapon()->OnFire(
-						GVars.PlayerController->PlayerCameraManager->GetCameraRotation(), // Direction: if we don't set this the bullet just chills
-						GVars.PlayerController->PlayerCameraManager->GetCameraLocation()); // Start location
-					return;
+					// Skip mission target suspects if exclusion is enabled
+					if (MiscSettings.TriggerBotExcludeTargetSuspects && Utils::IsTargetSuspect(HitActor))
+						continue;
+
+					AReadyOrNotCharacter* Target = reinterpret_cast<AReadyOrNotCharacter*>(HitActor);
+					if (Target->IsDeadOrUnconscious() || Target->IsIncapacitated() || Target->IsArrestedOrSurrendered())
+						continue;
+
+					// If we found a valid enemy anywhere in the trace results, trigger a shot
+					if (MiscSettings.TriggerBotUsesSilentAim && GVars.ReadyOrNotChar->GetEquippedWeapon())
+					{
+						GVars.ReadyOrNotChar->GetEquippedWeapon()->OnFire(FRotator(), HitResult.ImpactPoint);
+						return; 
+					}
+					if (GVars.ReadyOrNotChar->GetEquippedWeapon())
+					{
+						GVars.ReadyOrNotChar->GetEquippedWeapon()->OnFire(
+							GVars.PlayerController->PlayerCameraManager->GetCameraRotation(), 
+							GVars.PlayerController->PlayerCameraManager->GetCameraLocation());
+						return;
+					}
 				}
 			}
 		}

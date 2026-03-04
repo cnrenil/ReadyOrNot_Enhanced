@@ -1,9 +1,4 @@
 #include "pch.h"
-#include "Cheats.h"
-#include "Utils/Utils.h"
-
-#include <vcruntime_string.h>
-#include <algorithm>
 
 struct BonePair { int Parent; int Child; };
 BonePair SuspectSkeletonBones_1[] = {
@@ -118,7 +113,7 @@ auto RenderColor = IM_COL32(255, 255, 255, 255);
 
 void Cheats::RenderESP()
 {
-	if (!CVars.ESP) return;
+	if (!CVars.ESP || Utils::bIsLoading) return;
     if (!GVars.PlayerController || !GVars.Level || !GVars.GameState) return;
 
     // Additional safety during transitions
@@ -401,59 +396,67 @@ void Cheats::RenderESP()
 			if (CurrentTime - it->CreationTime > ESPSettings.TracerDuration)
 			{
 				it = BulletTracersList.erase(it);
+				continue;
 			}
-			else
+			
+			float Age = CurrentTime - it->CreationTime;
+			float FadeRatio = 1.0f - (Age / ESPSettings.TracerDuration);
+			if (FadeRatio < 0.0f) FadeRatio = 0.0f;
+			
+			ImU32 ColorToUse;
+			if (ESPSettings.TracerRainbow)
 			{
-				FVector2D StartScreen, EndScreen;
-				// Compute color
-				float Age = CurrentTime - it->CreationTime;
-				float FadeRatio = 1.0f - (Age / ESPSettings.TracerDuration);
-				if (FadeRatio < 0.0f) FadeRatio = 0.0f;
-				
-				ImU32 ColorToUse = Utils::ConvertImVec4toU32(ESPSettings.TracerColor);
-				if (ESPSettings.TracerRainbow)
+				float Hue = fmodf(it->CreationTime * 0.5f, 1.0f);
+				float R, G, B;
+				ImGui::ColorConvertHSVtoRGB(Hue, 1.0f, 1.0f, R, G, B);
+				ColorToUse = IM_COL32((int)(R * 255), (int)(G * 255), (int)(B * 255), (int)(FadeRatio * 255));
+			}
+			else 
+			{
+				ColorToUse = IM_COL32(
+					(int)(ESPSettings.TracerColor.x * 255), 
+					(int)(ESPSettings.TracerColor.y * 255), 
+					(int)(ESPSettings.TracerColor.z * 255), 
+					(int)(FadeRatio * 255)
+				);
+			}
+
+			// Draw segments
+			for (size_t i = 0; i < it->Points.size(); i++)
+			{
+				FVector2D p1Screen;
+				bool bP1Visible = GVars.PlayerController->ProjectWorldLocationToScreen(it->Points[i], &p1Screen, true);
+
+				// Draw impact point circle
+				if (bP1Visible)
 				{
-					// Time-based phase offset, plus optional spatial phase based on tracer iteration or creation time
-					float Hue = fmodf(it->CreationTime * 0.5f, 1.0f);
-					float R, G, B;
-					ImGui::ColorConvertHSVtoRGB(Hue, 1.0f, 1.0f, R, G, B);
+					ImGui::GetBackgroundDrawList()->AddCircleFilled(
+						ImVec2(p1Screen.X, p1Screen.Y), 
+						2.0f, 
+						ColorToUse
+					);
+				}
+
+				if (i + 1 < it->Points.size())
+				{
+					FVector2D p2Screen;
+					bool bP2Visible = GVars.PlayerController->ProjectWorldLocationToScreen(it->Points[i+1], &p2Screen, true);
 					
-					// Fade towards gray/black based on FadeRatio
-					ColorToUse = IM_COL32((int)(R * 255), (int)(G * 255), (int)(B * 255), (int)(FadeRatio * 255));
-				}
-				else 
-				{
-					ColorToUse = IM_COL32(
-						(int)(ESPSettings.TracerColor.x * 255), 
-						(int)(ESPSettings.TracerColor.y * 255), 
-						(int)(ESPSettings.TracerColor.z * 255), 
-						(int)(FadeRatio * 255)
-					);
-				}
-
-				if (GVars.PlayerController->ProjectWorldLocationToScreen(it->Start, &StartScreen, true) &&
-					GVars.PlayerController->ProjectWorldLocationToScreen(it->End, &EndScreen, true))
-				{
-					// Instead of tracing from screen-center to target (like snaplines),
-					// bullet tracers connect the physical start and end locations in the world.
-					ImGui::GetBackgroundDrawList()->AddLine(
-						ImVec2(StartScreen.X, StartScreen.Y),
-						ImVec2(EndScreen.X, EndScreen.Y),
-						ColorToUse,
-						1.5f
-					);
-
-					if (it->bHit)
+					// Draw line if at least one point is on screen (clipping will be handled by ImGui or we could do it manually)
+					// Actually, ImGui's AddLine is enough if we have valid coordinates, 
+					// but UE's ProjectWorldLocationToScreen returns false for points behind the camera.
+					if (bP1Visible && bP2Visible)
 					{
-						ImGui::GetBackgroundDrawList()->AddCircleFilled(
-							ImVec2(EndScreen.X, EndScreen.Y), 
-							2.5f, 
-							ColorToUse
+						ImGui::GetBackgroundDrawList()->AddLine(
+							ImVec2(p1Screen.X, p1Screen.Y),
+							ImVec2(p2Screen.X, p2Screen.Y),
+							ColorToUse,
+							1.5f
 						);
 					}
 				}
-				++it;
 			}
+			++it;
 		}
 	}
 }

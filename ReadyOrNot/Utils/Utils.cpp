@@ -1,11 +1,5 @@
 #include "pch.h"
-#include "Engine.h"
-#include "Cheats.h"
-#include "Localization.h"
 
-using namespace SDK;
-
-// can return nullptr
 UWorld* Utils::GetWorldSafe() 
 {
     UWorld* World = nullptr;
@@ -20,7 +14,6 @@ UWorld* Utils::GetWorldSafe()
 }
 
 
-// can return nullptr
 APlayerController* Utils::GetPlayerController()
 {
 	UWorld* World = GetWorldSafe();
@@ -95,7 +88,6 @@ FVector Utils::FRotatorToVector(const FRotator& Rot)
     ).GetNormalized(); // normalize just in case
 }
 
-// Helper function to get or create player cheat data
 PlayerCheatData& Utils::GetPlayerCheats(APlayerCharacter* Player)
 {
     return PlayerCheatMap[Player];
@@ -154,7 +146,7 @@ FVector2D Utils::ImVec2ToFVector2D(ImVec2 Vector)
 
 AActor* Utils::GetBestTarget(APlayerController* ViewPoint, bool TargetCivs, bool TargetArrested, bool TargetSurrendered, bool TargetDead, float MaxFOV, bool RequiresLOS, std::string TargetBone, bool TargetAll, bool ExcludeTargetSuspects)
 {
-    if (!GVars.World || !GVars.World->VTable) return nullptr;
+    if (Utils::bIsLoading || !GVars.World || !GVars.World->VTable) return nullptr;
     if (!GVars.Level || !GVars.GameState || !ViewPoint || !ViewPoint->PlayerCameraManager) return nullptr;
 
     ULevel* Level = GVars.Level;
@@ -320,9 +312,26 @@ void Utils::Error(std::string msg)
 
 bool Utils::IsTargetSuspect(AActor* Actor)
 {
-    if (!Actor || !GVars.GameState) return false;
+    if (!Actor || CachedSuspectTagNames.empty()) return false;
 
-    // Collect suspect tags from mission objectives
+    // Check if the actor has a matching tag using FName comparison (very fast)
+    for (int t = 0; t < Actor->Tags.Num(); t++)
+    {
+        FName ActorTag = Actor->Tags[t];
+        for (const auto& CachedTag : CachedSuspectTagNames)
+        {
+            if (ActorTag == CachedTag)
+                return true;
+        }
+    }
+    return false;
+}
+
+void Utils::CacheObjectives()
+{
+    CachedSuspectTagNames.clear();
+    if (!GVars.GameState) return;
+
     TArray<AObjective*> Objectives = GVars.GameState->MissionObjectives;
     for (int i = 0; i < Objectives.Num(); i++)
     {
@@ -331,17 +340,24 @@ bool Utils::IsTargetSuspect(AActor* Actor)
         if (Obj->IsA(ANeutralizeSuspectByTag::StaticClass()))
         {
             ANeutralizeSuspectByTag* NeutObj = static_cast<ANeutralizeSuspectByTag*>(Obj);
-            std::string SuspTag = NeutObj->SuspectTag.ToString();
-            if (SuspTag.empty() || SuspTag == "None") continue;
-
-            // Check if the actor has a matching tag
-            for (int t = 0; t < Actor->Tags.Num(); t++)
+            if (NeutObj->SuspectTag.ComparisonIndex != 0) 
             {
-                if (Actor->Tags[t].ToString() == SuspTag)
-                    return true;
+                CachedSuspectTagNames.push_back(NeutObj->SuspectTag);
             }
         }
     }
+}
+
+bool Utils::IsInLoadingState()
+{
+    if (!GVars.World || !GVars.World->VTable) return true;
+    
+    if (!GVars.Level) return true;
+
+    if (!GVars.GameState) return true;
+
+    if (GVars.Level->Actors.Num() < 1) return true; 
+
     return false;
 }
 
